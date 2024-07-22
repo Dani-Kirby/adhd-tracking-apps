@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		BE52B7C82C4EB11300141CC3 /* MedicationDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE52B7C72C4EB11300141CC3 /* MedicationDetail.swift */; };
+		BE52B7CA2C4EB45900141CC3 /* MedicationList.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE52B7C92C4EB45900141CC3 /* MedicationList.swift */; };
 		BED362ED2C45B2DA00F88521 /* ADHD_TrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BED362EC2C45B2DA00F88521 /* ADHD_TrackerApp.swift */; };
 		BED362EF2C45B2DA00F88521 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BED362EE2C45B2DA00F88521 /* ContentView.swift */; };
 		BED362F32C45B2DD00F88521 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BED362F22C45B2DD00F88521 /* Assets.xcassets */; };
@@ -22,13 +24,15 @@
 		BED3630D2C472C7D00F88521 /* BloodPressureDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = BED3630C2C472C7D00F88521 /* BloodPressureDetail.swift */; };
 		BED3630F2C47390B00F88521 /* SleepDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = BED3630E2C47390B00F88521 /* SleepDetail.swift */; };
 		BED363112C473F1200F88521 /* ScreenTimeDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = BED363102C473F1200F88521 /* ScreenTimeDetail.swift */; };
-		BED363132C49F6DB00F88521 /* DailyTracking.swift in Sources */ = {isa = PBXBuildFile; fileRef = BED363122C49F6DB00F88521 /* DailyTracking.swift */; };
-		BED363152C49F7D100F88521 /* RecordedDay.swift in Sources */ = {isa = PBXBuildFile; fileRef = BED363142C49F7D100F88521 /* RecordedDay.swift */; };
-		BED363172C4A156300F88521 /* RecordedDayList.swift in Sources */ = {isa = PBXBuildFile; fileRef = BED363162C4A156300F88521 /* RecordedDayList.swift */; };
-		BED363192C4A17C400F88521 /* RecordedDayDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = BED363182C4A17C400F88521 /* RecordedDayDetail.swift */; };
+		BED363152C49F7D100F88521 /* EventDay.swift in Sources */ = {isa = PBXBuildFile; fileRef = BED363142C49F7D100F88521 /* EventDay.swift */; };
+		BED363172C4A156300F88521 /* EventDayList.swift in Sources */ = {isa = PBXBuildFile; fileRef = BED363162C4A156300F88521 /* EventDayList.swift */; };
+		BED363192C4A17C400F88521 /* EventDayDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = BED363182C4A17C400F88521 /* EventDayDetail.swift */; };
+		BED3631B2C4B2B8400F88521 /* DayData.swift in Sources */ = {isa = PBXBuildFile; fileRef = BED3631A2C4B2B8400F88521 /* DayData.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		BE52B7C72C4EB11300141CC3 /* MedicationDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationDetail.swift; sourceTree = "<group>"; };
+		BE52B7C92C4EB45900141CC3 /* MedicationList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationList.swift; sourceTree = "<group>"; };
 		BED362E92C45B2DA00F88521 /* ADHD Tracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ADHD Tracker.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		BED362EC2C45B2DA00F88521 /* ADHD_TrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ADHD_TrackerApp.swift; sourceTree = "<group>"; };
 		BED362EE2C45B2DA00F88521 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -45,10 +49,10 @@
 		BED3630C2C472C7D00F88521 /* BloodPressureDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BloodPressureDetail.swift; sourceTree = "<group>"; };
 		BED3630E2C47390B00F88521 /* SleepDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SleepDetail.swift; sourceTree = "<group>"; };
 		BED363102C473F1200F88521 /* ScreenTimeDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenTimeDetail.swift; sourceTree = "<group>"; };
-		BED363122C49F6DB00F88521 /* DailyTracking.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyTracking.swift; sourceTree = "<group>"; };
-		BED363142C49F7D100F88521 /* RecordedDay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordedDay.swift; sourceTree = "<group>"; };
-		BED363162C4A156300F88521 /* RecordedDayList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordedDayList.swift; sourceTree = "<group>"; };
-		BED363182C4A17C400F88521 /* RecordedDayDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RecordedDayDetail.swift; sourceTree = "<group>"; };
+		BED363142C49F7D100F88521 /* EventDay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventDay.swift; sourceTree = "<group>"; };
+		BED363162C4A156300F88521 /* EventDayList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventDayList.swift; sourceTree = "<group>"; };
+		BED363182C4A17C400F88521 /* EventDayDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventDayDetail.swift; sourceTree = "<group>"; };
+		BED3631A2C4B2B8400F88521 /* DayData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayData.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -62,6 +66,56 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		BE52B7C22C4EAFF900141CC3 /* BloodPressure */ = {
+			isa = PBXGroup;
+			children = (
+				BED363022C45B36100F88521 /* BloodPressure.swift */,
+				BED3630C2C472C7D00F88521 /* BloodPressureDetail.swift */,
+				BED363042C45B43800F88521 /* BloodPressureList.swift */,
+			);
+			path = BloodPressure;
+			sourceTree = "<group>";
+		};
+		BE52B7C32C4EB01200141CC3 /* ScreenTime */ = {
+			isa = PBXGroup;
+			children = (
+				BED363002C45B33500F88521 /* ScreenTime.swift */,
+				BED3630A2C45CB9500F88521 /* ScreenTimeList.swift */,
+				BED363102C473F1200F88521 /* ScreenTimeDetail.swift */,
+			);
+			path = ScreenTime;
+			sourceTree = "<group>";
+		};
+		BE52B7C42C4EB02800141CC3 /* Sleep */ = {
+			isa = PBXGroup;
+			children = (
+				BED362FC2C45B31400F88521 /* Sleep.swift */,
+				BED3630E2C47390B00F88521 /* SleepDetail.swift */,
+				BED363082C45B73400F88521 /* SleepList.swift */,
+			);
+			path = Sleep;
+			sourceTree = "<group>";
+		};
+		BE52B7C52C4EB04900141CC3 /* Days */ = {
+			isa = PBXGroup;
+			children = (
+				BED363142C49F7D100F88521 /* EventDay.swift */,
+				BED363182C4A17C400F88521 /* EventDayDetail.swift */,
+				BED363162C4A156300F88521 /* EventDayList.swift */,
+			);
+			path = Days;
+			sourceTree = "<group>";
+		};
+		BE52B7C62C4EB07800141CC3 /* Medication */ = {
+			isa = PBXGroup;
+			children = (
+				BED362FE2C45B32700F88521 /* Medication.swift */,
+				BE52B7C72C4EB11300141CC3 /* MedicationDetail.swift */,
+				BE52B7C92C4EB45900141CC3 /* MedicationList.swift */,
+			);
+			path = Medication;
+			sourceTree = "<group>";
+		};
 		BED362E02C45B2DA00F88521 = {
 			isa = PBXGroup;
 			children = (
@@ -81,23 +135,15 @@
 		BED362EB2C45B2DA00F88521 /* ADHD Tracker */ = {
 			isa = PBXGroup;
 			children = (
-				BED362EC2C45B2DA00F88521 /* ADHD_TrackerApp.swift */,
 				BED362EE2C45B2DA00F88521 /* ContentView.swift */,
-				BED363122C49F6DB00F88521 /* DailyTracking.swift */,
-				BED363142C49F7D100F88521 /* RecordedDay.swift */,
-				BED363182C4A17C400F88521 /* RecordedDayDetail.swift */,
-				BED363162C4A156300F88521 /* RecordedDayList.swift */,
-				BED3630A2C45CB9500F88521 /* ScreenTimeList.swift */,
-				BED363102C473F1200F88521 /* ScreenTimeDetail.swift */,
+				BE52B7C62C4EB07800141CC3 /* Medication */,
+				BE52B7C52C4EB04900141CC3 /* Days */,
+				BE52B7C42C4EB02800141CC3 /* Sleep */,
+				BE52B7C32C4EB01200141CC3 /* ScreenTime */,
+				BE52B7C22C4EAFF900141CC3 /* BloodPressure */,
+				BED362EC2C45B2DA00F88521 /* ADHD_TrackerApp.swift */,
+				BED3631A2C4B2B8400F88521 /* DayData.swift */,
 				BED363062C45B57000F88521 /* SampleData.swift */,
-				BED363082C45B73400F88521 /* SleepList.swift */,
-				BED3630E2C47390B00F88521 /* SleepDetail.swift */,
-				BED363042C45B43800F88521 /* BloodPressureList.swift */,
-				BED3630C2C472C7D00F88521 /* BloodPressureDetail.swift */,
-				BED362FC2C45B31400F88521 /* Sleep.swift */,
-				BED362FE2C45B32700F88521 /* Medication.swift */,
-				BED363002C45B33500F88521 /* ScreenTime.swift */,
-				BED363022C45B36100F88521 /* BloodPressure.swift */,
 				BED362F22C45B2DD00F88521 /* Assets.xcassets */,
 				BED362F42C45B2DD00F88521 /* Preview Content */,
 			);
@@ -185,20 +231,22 @@
 				BED3630D2C472C7D00F88521 /* BloodPressureDetail.swift in Sources */,
 				BED3630B2C45CB9500F88521 /* ScreenTimeList.swift in Sources */,
 				BED362FF2C45B32700F88521 /* Medication.swift in Sources */,
-				BED363152C49F7D100F88521 /* RecordedDay.swift in Sources */,
+				BED363152C49F7D100F88521 /* EventDay.swift in Sources */,
 				BED363092C45B73400F88521 /* SleepList.swift in Sources */,
 				BED362EF2C45B2DA00F88521 /* ContentView.swift in Sources */,
-				BED363132C49F6DB00F88521 /* DailyTracking.swift in Sources */,
 				BED363012C45B33500F88521 /* ScreenTime.swift in Sources */,
 				BED363032C45B36100F88521 /* BloodPressure.swift in Sources */,
 				BED362ED2C45B2DA00F88521 /* ADHD_TrackerApp.swift in Sources */,
-				BED363192C4A17C400F88521 /* RecordedDayDetail.swift in Sources */,
+				BED363192C4A17C400F88521 /* EventDayDetail.swift in Sources */,
 				BED363112C473F1200F88521 /* ScreenTimeDetail.swift in Sources */,
+				BED3631B2C4B2B8400F88521 /* DayData.swift in Sources */,
 				BED362FD2C45B31400F88521 /* Sleep.swift in Sources */,
 				BED363072C45B57000F88521 /* SampleData.swift in Sources */,
-				BED363172C4A156300F88521 /* RecordedDayList.swift in Sources */,
+				BED363172C4A156300F88521 /* EventDayList.swift in Sources */,
+				BE52B7CA2C4EB45900141CC3 /* MedicationList.swift in Sources */,
 				BED363052C45B43800F88521 /* BloodPressureList.swift in Sources */,
 				BED3630F2C47390B00F88521 /* SleepDetail.swift in Sources */,
+				BE52B7C82C4EB11300141CC3 /* MedicationDetail.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

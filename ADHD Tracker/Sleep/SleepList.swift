@@ -10,23 +10,27 @@ import SwiftData
 
 struct SleepList: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var sleeps: [Sleep]
-    @State private var newSleep : Sleep?
+    @Query (sort:\EventDay.calendarDate) private var eventDays: [EventDay]
+    @State private var newDay : EventDay?
     
     var body: some View {
         NavigationSplitView {
             Group {
-                if !sleeps.isEmpty {
+                if !eventDays.isEmpty {
                     List {
-                        ForEach(sleeps) {
-                            sleep in
+//                        for (index, day) in eventDays.enumerated() {
+//                            Text(day)
+//                            Text(index)
+//                        }
+                        ForEach(eventDays) {
+                            day in
                             NavigationLink {
-                                SleepDetail(sleep: sleep)
+                                SleepDetail(eventDay: day)
                             } label: {
                                 HStack {
-                                    Text("\(sleep.calendarDate.calendarDate)")
+                                    Text("\(day.calendarDate.formatted(date: .complete, time: .omitted))")
                                     Spacer()
-                                    Text("\(sleep.hours):\(sleep.minutes)")
+                                    Text("\(day.sleep.hours)h \(day.sleep.minutes)m")
                                     
                                 }
 
@@ -38,7 +42,7 @@ struct SleepList: View {
                     ContentUnavailableView("No Sleeps", systemImage: "powersleep")
                 }
             }
-            .navigationTitle("Sleeps")
+            .navigationTitle("Sleep")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     EditButton()
@@ -49,9 +53,9 @@ struct SleepList: View {
                     }
                 }
             }
-            .sheet(item: $newSleep) { sleep in
+            .sheet(item: $newDay) { day in
                 NavigationStack {
-                    SleepDetail(sleep: sleep, isNew: true)
+                    SleepDetail(eventDay: day, isNew: true)
                 }
                 .interactiveDismissDisabled()
             }
@@ -64,16 +68,16 @@ struct SleepList: View {
         
         private func addSleep() {
             withAnimation {
-                let newItem = Sleep(hours: 0, minutes: 0, calendarDate: RecordedDay(calendarDate: .now))
+                let newItem = EventDay(calendarDate: Date.now, sleep: Sleep(hours: 0, minutes: 0), screenTime: ScreenTime(hours: 0, minutes: 0), bloodPressure: BloodPressure(systolic: 0, diastolic: 0, time: Date.now), medication: Medication(name: "", dosage: "", units: "", time: Date.now, taken: false))
                 modelContext.insert(newItem)
-                newSleep = newItem
+                newDay = newItem
             }
         }
         
         private func deleteSleep(offsets: IndexSet) {
             withAnimation {
                 for index in offsets {
-                    modelContext.delete(sleeps[index])
+                    modelContext.delete(eventDays[index].sleep)
                 }
             }
     }
@@ -86,5 +90,5 @@ struct SleepList: View {
 
 #Preview("Empty List") {
     SleepList()
-        .modelContainer(for: Sleep.self, inMemory: true)
+        .modelContainer(for: EventDay.self, inMemory: true)
 }

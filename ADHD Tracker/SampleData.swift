@@ -23,7 +23,8 @@ class SampleData {
             BloodPressure.self,
             Sleep.self,
             ScreenTime.self,
-            RecordedDay.self
+            EventDay.self,
+            Medication.self,
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
         
@@ -46,27 +47,36 @@ class SampleData {
         for screenTime in ScreenTime.sampleData {
             context.insert(screenTime)
         }
-        for day in RecordedDay.sampleData {
-            context.insert(day)
+        for eventDay in EventDay.sampleData {
+            context.insert(eventDay)
         }
-//        for medication in Medication.sampleData {
-//            context.insert(medication)
-//        }
+        for medication in Medication.sampleData {
+            context.insert(medication)
+        }
         
-//        RecordedDay.sampleData[0].calendarDate = BloodPressure.sampleData[0].calendarDate
-//        RecordedDay.sampleData[1].calendarDate = BloodPressure.sampleData[1].calendarDate
-
-//        Sleep.sampleData[0].calendarDate = RecordedDay.sampleData[0]
-//        Sleep.sampleData[1].calendarDate = RecordedDay.sampleData[1]
-//        Sleep.sampleData[2].calendarDate = RecordedDay.sampleData[2]
-//        RecordedDay.sampleData[0].calendarDate = Sleep.sampleData[0].calendarDate
-//        RecordedDay.sampleData[1].calendarDate = Sleep.sampleData[1].calendarDate
-
+        EventDay.sampleData[0].bloodPressure = BloodPressure.sampleData[0]
+        EventDay.sampleData[1].bloodPressure = BloodPressure.sampleData[1]
+        EventDay.sampleData[2].bloodPressure = BloodPressure.sampleData[2]
+        EventDay.sampleData[3].bloodPressure = BloodPressure.sampleData[3]
+        EventDay.sampleData[4].bloodPressure = BloodPressure.sampleData[4]
         
-//        RecordedDay.sampleData[0].calendarDate = ScreenTime.sampleData[0].calendarDate
-//        RecordedDay.sampleData[1].calendarDate = ScreenTime.sampleData[1].calendarDate
-
-
+        EventDay.sampleData[0].sleep = Sleep.sampleData[0]
+        EventDay.sampleData[1].sleep = Sleep.sampleData[1]
+        EventDay.sampleData[2].sleep = Sleep.sampleData[2]
+        EventDay.sampleData[3].sleep = Sleep.sampleData[3]
+        EventDay.sampleData[4].sleep = Sleep.sampleData[4]
+        
+        EventDay.sampleData[0].screenTime = ScreenTime.sampleData[0]
+        EventDay.sampleData[1].screenTime = ScreenTime.sampleData[1]
+        EventDay.sampleData[2].screenTime = ScreenTime.sampleData[2]
+        EventDay.sampleData[3].screenTime = ScreenTime.sampleData[3]
+        EventDay.sampleData[4].screenTime = ScreenTime.sampleData[4]
+        
+        EventDay.sampleData[0].medication = Medication.sampleData[0]
+        EventDay.sampleData[1].medication = Medication.sampleData[1]
+        EventDay.sampleData[2].medication = Medication.sampleData[2]
+        EventDay.sampleData[3].medication = Medication.sampleData[3]
+        EventDay.sampleData[4].medication = Medication.sampleData[4]
 
         
         do {
@@ -86,7 +96,10 @@ class SampleData {
     var screenTime: ScreenTime {
         ScreenTime.sampleData[0]
     }
-    var recordedDay: RecordedDay {
-        RecordedDay.sampleData[0]
+    var eventDay: EventDay {
+        EventDay.sampleData[0]
+    }
+    var medication: Medication {
+        Medication.sampleData[0]
     }
 }

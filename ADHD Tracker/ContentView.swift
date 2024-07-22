@@ -10,9 +10,13 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-
+    
     var body: some View {
         TabView {
+            EventDayList()
+                .tabItem {
+                    Label("Day Data", systemImage: "chart.bar.doc.horizontal.fill")
+                }
             BloodPressureList()
                 .tabItem {
                     Label("Blood Pressure", systemImage: "heart.fill")
@@ -25,8 +29,11 @@ struct ContentView: View {
                 .tabItem {
                     Label("Screen Time", systemImage: "iphone.gen1")
                 }
+            MedicationList()
+                .tabItem { Label("Medications", systemImage: "pill") }
         }
     }
+    
 }
 
 #Preview {

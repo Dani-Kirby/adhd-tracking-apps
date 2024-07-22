@@ -9,28 +9,29 @@ import SwiftUI
 import SwiftData
 
 struct BloodPressureDetail: View {
-    @Bindable var bloodPressure : BloodPressure
+    @Bindable var eventDay: EventDay
     let isNew : Bool
     
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     
-    init(bloodPressure: BloodPressure, isNew: Bool = false) {
-        self.bloodPressure = bloodPressure
+    init(eventDay: EventDay, isNew: Bool = false) {
+        self.eventDay = eventDay
         self.isNew = isNew
     }
     
     
     var body: some View {
         Form {
-            DatePicker("Date", selection: $bloodPressure.calendarDate.calendarDate)
-            Picker("Systolic", selection: $bloodPressure.systolic) {
+            DatePicker("Date", selection: $eventDay.calendarDate, displayedComponents: [.date])
+            DatePicker("Time", selection: $eventDay.bloodPressure.time, displayedComponents: [.hourAndMinute])
+            Picker("Systolic", selection: $eventDay.bloodPressure.systolic) {
                 ForEach(80...200, id: \.self) {
                     systolic in
                     Text("\(systolic)")
                 }
             }
-            Picker("Diastolic", selection: $bloodPressure.diastolic) {
+            Picker("Diastolic", selection: $eventDay.bloodPressure.diastolic) {
                 ForEach(40...120, id: \.self) {
                     diastolic in
                     Text("\(diastolic)")
@@ -47,7 +48,7 @@ struct BloodPressureDetail: View {
                 }
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
-                        modelContext.delete(bloodPressure)
+                        modelContext.delete(eventDay.bloodPressure)
                         dismiss()
                     }
                 }
@@ -59,14 +60,14 @@ struct BloodPressureDetail: View {
 
 #Preview {
     NavigationStack {
-        BloodPressureDetail(bloodPressure: SampleData.shared.bloodPressure)
+        BloodPressureDetail(eventDay: SampleData.shared.eventDay)
     }
     .modelContainer(SampleData.shared.modelContainer)
 }
 
 #Preview("New BP") {
     NavigationStack {
-        BloodPressureDetail(bloodPressure: SampleData.shared.bloodPressure, isNew: true)
+        BloodPressureDetail(eventDay: SampleData.shared.eventDay, isNew: true)
 //            .navigationBarTitleDisplayMode(.inline)
          
     }

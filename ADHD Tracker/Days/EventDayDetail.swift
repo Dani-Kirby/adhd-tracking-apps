@@ -1,5 +1,5 @@
 //
-//  RecordedDayDetail.swift
+//  EventDayDetail.swift
 //  ADHD Tracker
 //
 //  Created by Dani Kirby on 7/18/24.
@@ -7,22 +7,20 @@
 
 import SwiftUI
 
-struct RecordedDayDetail: View {
-    @Bindable var recordedDay : RecordedDay
-    @Bindable var screenTime : ScreenTime
-    @Bindable var bloodPressure : BloodPressure
-    @Bindable var sleep : Sleep
+struct EventDayDetail: View {
+    @Bindable var eventDay : EventDay
     let isNew : Bool
+    
+//    @State private var screenTime: ScreenTime
+//    @State private var bloodPressure: BloodPressure
+//    @State private var sleep: Sleep
     
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     
     
-    init(recordedDay: RecordedDay, screenTime: ScreenTime, bloodPressure: BloodPressure, sleep: Sleep, isNew: Bool = false) {
-        self.recordedDay = recordedDay
-        self.screenTime = screenTime
-        self.bloodPressure = bloodPressure
-        self.sleep = sleep
+    init(eventDay: EventDay, isNew: Bool = false) {
+        self.eventDay = eventDay
         self.isNew = isNew
     }
     
@@ -31,17 +29,17 @@ struct RecordedDayDetail: View {
         Group{
             Form {
                 Section {
-                    DatePicker("Date", selection: $recordedDay.calendarDate, displayedComponents: .date)
+                    DatePicker("Date", selection: $eventDay.calendarDate, displayedComponents: .date)
                 }
               
                 Section(header: Text("Screen Time Data")) {
-                    Picker("Hours", selection: $screenTime.hours) {
+                    Picker("Hours", selection: $eventDay.screenTime.hours) {
                         ForEach(0...16, id: \.self) {
                             hours in
                             Text("\(hours)")
                         }
                     }
-                    Picker("Minutes", selection: $screenTime.minutes) {
+                    Picker("Minutes", selection: $eventDay.screenTime.minutes) {
                         ForEach(0...59, id: \.self) {
                             minutes in
                             Text("\(minutes)")
@@ -50,14 +48,15 @@ struct RecordedDayDetail: View {
                 }
                 
                 Section(header: Text("Blood Pressure")) {
-                    DatePicker("Time", selection: $recordedDay.calendarDate, displayedComponents: .hourAndMinute)
-                    Picker("Systolic", selection: $bloodPressure.systolic) {
+                    
+                    DatePicker("Time", selection: $eventDay.calendarDate, displayedComponents: .hourAndMinute)
+                    Picker("Systolic", selection: $eventDay.bloodPressure.systolic) {
                         ForEach(100...200, id: \.self) {
                             systolic in
                             Text("\(systolic)")
                         }
                     }
-                    Picker("Diastolic", selection: $bloodPressure.diastolic) {
+                    Picker("Diastolic", selection: $eventDay.bloodPressure.diastolic) {
                         ForEach(40...120, id: \.self) {
                             diastolic in
                             Text("\(diastolic)")
@@ -66,13 +65,13 @@ struct RecordedDayDetail: View {
                 }
  
                 Section(header: Text("Sleep")) {
-                    Picker("Hours", selection: $sleep.hours) {
+                    Picker("Hours", selection: $eventDay.sleep.hours) {
                         ForEach(0...16, id: \.self) {
                             hours in
                             Text("\(hours)")
                         }
                     }
-                    Picker("Minutes", selection: $sleep.minutes) {
+                    Picker("Minutes", selection: $eventDay.sleep.minutes) {
                         ForEach(0...59, id: \.self) {
                             minutes in
                             Text("\(minutes)")
@@ -91,7 +90,7 @@ struct RecordedDayDetail: View {
                     }
                     ToolbarItem(placement: .cancellationAction) {
                         Button("Cancel") {
-                            modelContext.delete(recordedDay)
+                            modelContext.delete(eventDay)
                             dismiss()
                         }
                     }
@@ -102,16 +101,17 @@ struct RecordedDayDetail: View {
     }
 }
 
+
 #Preview {
     NavigationStack {
-        RecordedDayDetail(recordedDay: SampleData.shared.recordedDay, screenTime: SampleData.shared.screenTime, bloodPressure: SampleData.shared.bloodPressure, sleep: SampleData.shared.sleep)
+        EventDayDetail(eventDay: SampleData.shared.eventDay)
     }
     .modelContainer(SampleData.shared.modelContainer)
 }
 
 #Preview("New Day") {
     NavigationStack {
-        RecordedDayDetail(recordedDay: SampleData.shared.recordedDay, screenTime: SampleData.shared.screenTime, bloodPressure: SampleData.shared.bloodPressure, sleep: SampleData.shared.sleep, isNew: true)
+        EventDayDetail(eventDay: SampleData.shared.eventDay, isNew: true)
 //            .navigationBarTitleDisplayMode(.inline)
          
     }

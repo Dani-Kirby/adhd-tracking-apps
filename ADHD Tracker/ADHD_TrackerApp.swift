@@ -15,7 +15,7 @@ struct ADHD_TrackerApp: App {
             BloodPressure.self,
             Sleep.self,
             ScreenTime.self,
-            RecordedDay.self
+            EventDay.self
         ])
         let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
