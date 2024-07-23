@@ -9,6 +9,8 @@
 /* Begin PBXBuildFile section */
 		BE52B7C82C4EB11300141CC3 /* MedicationDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE52B7C72C4EB11300141CC3 /* MedicationDetail.swift */; };
 		BE52B7CA2C4EB45900141CC3 /* MedicationList.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE52B7C92C4EB45900141CC3 /* MedicationList.swift */; };
+		BE52B7D02C4F41F400141CC3 /* AddNewMedicationDetail.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE52B7CF2C4F41F400141CC3 /* AddNewMedicationDetail.swift */; };
+		BE52B7D22C4F420000141CC3 /* AddNewMedication.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE52B7D12C4F420000141CC3 /* AddNewMedication.swift */; };
 		BED362ED2C45B2DA00F88521 /* ADHD_TrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = BED362EC2C45B2DA00F88521 /* ADHD_TrackerApp.swift */; };
 		BED362EF2C45B2DA00F88521 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BED362EE2C45B2DA00F88521 /* ContentView.swift */; };
 		BED362F32C45B2DD00F88521 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = BED362F22C45B2DD00F88521 /* Assets.xcassets */; };
@@ -33,6 +35,8 @@
 /* Begin PBXFileReference section */
 		BE52B7C72C4EB11300141CC3 /* MedicationDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationDetail.swift; sourceTree = "<group>"; };
 		BE52B7C92C4EB45900141CC3 /* MedicationList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MedicationList.swift; sourceTree = "<group>"; };
+		BE52B7CF2C4F41F400141CC3 /* AddNewMedicationDetail.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddNewMedicationDetail.swift; sourceTree = "<group>"; };
+		BE52B7D12C4F420000141CC3 /* AddNewMedication.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddNewMedication.swift; sourceTree = "<group>"; };
 		BED362E92C45B2DA00F88521 /* ADHD Tracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ADHD Tracker.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		BED362EC2C45B2DA00F88521 /* ADHD_TrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ADHD_TrackerApp.swift; sourceTree = "<group>"; };
 		BED362EE2C45B2DA00F88521 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -80,8 +84,8 @@
 			isa = PBXGroup;
 			children = (
 				BED363002C45B33500F88521 /* ScreenTime.swift */,
-				BED3630A2C45CB9500F88521 /* ScreenTimeList.swift */,
 				BED363102C473F1200F88521 /* ScreenTimeDetail.swift */,
+				BED3630A2C45CB9500F88521 /* ScreenTimeList.swift */,
 			);
 			path = ScreenTime;
 			sourceTree = "<group>";
@@ -112,6 +116,8 @@
 				BED362FE2C45B32700F88521 /* Medication.swift */,
 				BE52B7C72C4EB11300141CC3 /* MedicationDetail.swift */,
 				BE52B7C92C4EB45900141CC3 /* MedicationList.swift */,
+				BE52B7CF2C4F41F400141CC3 /* AddNewMedicationDetail.swift */,
+				BE52B7D12C4F420000141CC3 /* AddNewMedication.swift */,
 			);
 			path = Medication;
 			sourceTree = "<group>";
@@ -228,8 +234,10 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BE52B7D22C4F420000141CC3 /* AddNewMedication.swift in Sources */,
 				BED3630D2C472C7D00F88521 /* BloodPressureDetail.swift in Sources */,
 				BED3630B2C45CB9500F88521 /* ScreenTimeList.swift in Sources */,
+				BE52B7D02C4F41F400141CC3 /* AddNewMedicationDetail.swift in Sources */,
 				BED362FF2C45B32700F88521 /* Medication.swift in Sources */,
 				BED363152C49F7D100F88521 /* EventDay.swift in Sources */,
 				BED363092C45B73400F88521 /* SleepList.swift in Sources */,

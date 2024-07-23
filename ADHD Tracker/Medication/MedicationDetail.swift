@@ -16,6 +16,7 @@ struct MedicationDetail: View {
     @Environment(\.modelContext) private var modelContext
     
     @Query private var eventDays: [EventDay]
+    @Query private var medications: [Medication]
     
     init(medication: Medication, isNew: Bool = false) {
         self.medication = medication
@@ -24,7 +25,33 @@ struct MedicationDetail: View {
     
     var body: some View {
         Form {
-            DatePicker("Time", selection: $medication.calendarDate, displayedComponents: [.hourAndMinute])
+            DatePicker("Date", selection: $medication.calendarDate, displayedComponents: [.date])
+            DatePicker("Time", selection: $medication.time, displayedComponents: .hourAndMinute)
+            Picker("Medication", selection: $medication.name) {
+                Text("Other")
+                    .tag(nil as Medication?)
+                ForEach(medications) { med in
+                    Text(med.name)
+                        .tag(med as Medication?)
+                }
+            }
+            Toggle("Took Dose?", isOn: $medication.tookAll)
+        }
+        .navigationTitle(isNew ? "Record Med Dose" : "Edit Med Dose")
+        .toolbar{
+            if isNew {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        modelContext.delete(medication)
+                        dismiss()
+                    }
+                }
+            }
         }
     }
 }
@@ -33,10 +60,12 @@ struct MedicationDetail: View {
     NavigationStack {
         MedicationDetail(medication: SampleData.shared.medication)
     }
+    .modelContainer(SampleData.shared.modelContainer)
 }
 #Preview("New Medication") {
     NavigationStack {
         MedicationDetail(medication: SampleData.shared.medication, isNew: true)
             .navigationBarTitleDisplayMode(.inline)
     }
+    .modelContainer(SampleData.shared.modelContainer)
 }
