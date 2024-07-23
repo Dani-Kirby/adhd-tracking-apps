@@ -21,13 +21,11 @@ struct EventDayList: View {
                 List {
                     ForEach(eventDays) { day in
                         NavigationLink {
-                            EventDayDetail(eventDay: day)
-                                .navigationTitle("Recorded Day")
+                            EventDayDetail(eventDay: day, screenTime: day.screenTime ?? ScreenTime(hours: 0, minutes: 0, date: Date.now), bloodPressure: day.bloodPressure ?? BloodPressure(systolic: 120, diastolic: 80, time: Date.now, date: Date.now), sleep: day.sleep ?? Sleep(hours: 0, minutes: 0, date: Date.now), medication: day.medication ?? Medication(name: "", dosage: 0, units: "", date: Date.now, time: Date.now, taken: false, scheduleStart: 8, scheduleEnd: 10))
                         } label: {
                             HStack {
                                 Text("\(day.calendarDate.formatted(date: .complete, time: .omitted))")
                                 Spacer()
-//                                Text("\(screenTimes[0].hours)")
                             }
 
                         }
@@ -51,7 +49,7 @@ struct EventDayList: View {
         }
         .sheet(item: $newDay) { day in
             NavigationStack {
-                EventDayDetail(eventDay: day, isNew: true)
+                EventDayDetail(eventDay: day, screenTime: day.screenTime ?? ScreenTime(hours: 0, minutes: 0, date: Date.now), bloodPressure: day.bloodPressure ?? BloodPressure(systolic: 120, diastolic: 80, time: Date.now, date: Date.now), sleep: day.sleep ?? Sleep(hours: 0, minutes: 0, date: Date.now), medication: day.medication ?? Medication(name: "", dosage: 0, units: "", date: Date.now, time: Date.now, taken: false, scheduleStart: 8, scheduleEnd: 10), isNew: true)
             }
             .interactiveDismissDisabled()
         }
@@ -64,7 +62,7 @@ struct EventDayList: View {
     
     private func addDay() {
         withAnimation {
-            let newItem = EventDay(calendarDate: Date(timeIntervalSinceNow: -1000), sleep: Sleep(hours: 0, minutes: 0), screenTime: ScreenTime(hours: 0, minutes: 0), bloodPressure: BloodPressure(systolic: 0, diastolic: 0, time: Date.now), medication: Medication(name: "", dosage: "", units: "", time: Date.now, taken: false))
+            let newItem = EventDay(calendarDate: Date(timeIntervalSinceNow: -1000))
             modelContext.insert(newItem)
             newDay = newItem
         }

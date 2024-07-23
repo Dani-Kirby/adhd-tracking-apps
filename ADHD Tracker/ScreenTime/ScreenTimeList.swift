@@ -10,25 +10,24 @@ import SwiftData
 
 struct ScreenTimeList: View {
     @Environment(\.modelContext) private var modelContext
-//    @Query private var screenTimes: [ScreenTime]
-    @Query private var eventDays: [EventDay]
-    @State private var newDay : EventDay?
+    @Query private var screenTimes: [ScreenTime]
+    @State private var newScreenTime : ScreenTime?
     
     var body: some View {
         NavigationSplitView {
             Group {
-                if !eventDays.isEmpty {
+                if !screenTimes.isEmpty {
                     List {
-                        ForEach(eventDays) { 
-                        day in
+                        ForEach(screenTimes) {
+                        screenTime in
                             NavigationLink {
-                                ScreenTimeDetail(eventDay: day)
+                                ScreenTimeDetail(screenTime: screenTime)
                                     .navigationTitle("Screen Time")
                             } label: {
                                 HStack {
-                                    Text("\(day.calendarDate.formatted(date: .complete, time: .omitted))")
+                                    Text("\(screenTime.calendarDate.formatted(date: .complete, time: .omitted))")
                                     Spacer()
-                                    Text("\(day.screenTime.hours)h \(day.screenTime.minutes)m")
+                                    Text("\(screenTime.hours)h \(screenTime.minutes)m")
                                 }
 
                             }
@@ -50,9 +49,9 @@ struct ScreenTimeList: View {
                     }
                 }
             }
-            .sheet(item: $newDay) { day in
+            .sheet(item: $newScreenTime) { screenTime in
                 NavigationStack {
-                    ScreenTimeDetail(eventDay: day, isNew: true)
+                    ScreenTimeDetail(screenTime: screenTime, isNew: true)
                 }
                 .interactiveDismissDisabled()
             }
@@ -65,16 +64,16 @@ struct ScreenTimeList: View {
         
         private func addScreenTime() {
             withAnimation {
-                let newItem = EventDay(calendarDate: Date.now, sleep: Sleep(hours: 0, minutes: 0), screenTime: ScreenTime(hours: 0, minutes: 0), bloodPressure: BloodPressure(systolic: 0, diastolic: 0, time: Date.now), medication: Medication(name: "", dosage: "", units: "", time: Date.now, taken: false))
+                let newItem = ScreenTime(hours: 0, minutes: 0, date: Date.now)
                 modelContext.insert(newItem)
-                newDay = newItem
+                newScreenTime = newItem
             }
         }
         
         private func deleteScreenTime(offsets: IndexSet) {
             withAnimation {
                 for index in offsets {
-                    modelContext.delete(eventDays[index].screenTime)
+                    modelContext.delete(screenTimes[index])
                 }
             }
     

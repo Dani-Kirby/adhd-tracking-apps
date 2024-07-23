@@ -54,30 +54,29 @@ class SampleData {
             context.insert(medication)
         }
         
-        EventDay.sampleData[0].bloodPressure = BloodPressure.sampleData[0]
-        EventDay.sampleData[1].bloodPressure = BloodPressure.sampleData[1]
-        EventDay.sampleData[2].bloodPressure = BloodPressure.sampleData[2]
-        EventDay.sampleData[3].bloodPressure = BloodPressure.sampleData[3]
-        EventDay.sampleData[4].bloodPressure = BloodPressure.sampleData[4]
+        BloodPressure.sampleData[0].belongsTo = EventDay.sampleData[0]
+        BloodPressure.sampleData[1].belongsTo = EventDay.sampleData[1]
+        BloodPressure.sampleData[2].belongsTo = EventDay.sampleData[2]
+        BloodPressure.sampleData[3].belongsTo = EventDay.sampleData[3]
+        BloodPressure.sampleData[4].belongsTo = EventDay.sampleData[4]
         
-        EventDay.sampleData[0].sleep = Sleep.sampleData[0]
-        EventDay.sampleData[1].sleep = Sleep.sampleData[1]
-        EventDay.sampleData[2].sleep = Sleep.sampleData[2]
-        EventDay.sampleData[3].sleep = Sleep.sampleData[3]
-        EventDay.sampleData[4].sleep = Sleep.sampleData[4]
+        Sleep.sampleData[0].belongsTo = EventDay.sampleData[0]
+        Sleep.sampleData[1].belongsTo = EventDay.sampleData[1]
+        Sleep.sampleData[2].belongsTo = EventDay.sampleData[2]
+        Sleep.sampleData[3].belongsTo = EventDay.sampleData[3]
+        Sleep.sampleData[4].belongsTo = EventDay.sampleData[4]
         
-        EventDay.sampleData[0].screenTime = ScreenTime.sampleData[0]
-        EventDay.sampleData[1].screenTime = ScreenTime.sampleData[1]
-        EventDay.sampleData[2].screenTime = ScreenTime.sampleData[2]
-        EventDay.sampleData[3].screenTime = ScreenTime.sampleData[3]
-        EventDay.sampleData[4].screenTime = ScreenTime.sampleData[4]
-        
-        EventDay.sampleData[0].medication = Medication.sampleData[0]
-        EventDay.sampleData[1].medication = Medication.sampleData[1]
-        EventDay.sampleData[2].medication = Medication.sampleData[2]
-        EventDay.sampleData[3].medication = Medication.sampleData[3]
-        EventDay.sampleData[4].medication = Medication.sampleData[4]
+        ScreenTime.sampleData[0].belongsTo = EventDay.sampleData[0]
+        ScreenTime.sampleData[1].belongsTo = EventDay.sampleData[1]
+        ScreenTime.sampleData[2].belongsTo = EventDay.sampleData[2]
+        ScreenTime.sampleData[3].belongsTo = EventDay.sampleData[3]
+        ScreenTime.sampleData[4].belongsTo = EventDay.sampleData[4]
 
+        Medication.sampleData[0].belongsTo = EventDay.sampleData[0]
+        Medication.sampleData[1].belongsTo = EventDay.sampleData[1]
+        Medication.sampleData[2].belongsTo = EventDay.sampleData[2]
+        Medication.sampleData[3].belongsTo = EventDay.sampleData[3]
+        Medication.sampleData[4].belongsTo = EventDay.sampleData[4]
         
         do {
             try context.save()

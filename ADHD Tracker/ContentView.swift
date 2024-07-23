@@ -13,24 +13,25 @@ struct ContentView: View {
     
     var body: some View {
         TabView {
-            EventDayList()
-                .tabItem {
-                    Label("Day Data", systemImage: "chart.bar.doc.horizontal.fill")
-                }
-            BloodPressureList()
-                .tabItem {
-                    Label("Blood Pressure", systemImage: "heart.fill")
-                }
+//            EventDayList()
+//                .tabItem {
+//                    Label("Day Data", systemImage: "chart.bar.doc.horizontal.fill")
+//                }
+//            BloodPressureList()
+//                .tabItem {
+//                    Label("Blood Pressure", systemImage: "heart.fill")
+//                }
             SleepList()
                 .tabItem {
                     Label("Sleep Data", systemImage: "bed.double.fill")
                 }
-            ScreenTimeList()
-                .tabItem {
-                    Label("Screen Time", systemImage: "iphone.gen1")
-                }
-            MedicationList()
-                .tabItem { Label("Medications", systemImage: "pill") }
+//            ScreenTimeList()
+//                .tabItem {
+//                    Label("Screen Time", systemImage: "iphone.gen1")
+//                }
+//            MedicationList()
+//                .tabItem { Label("Medications", systemImage: "pill")
+//                }
         }
     }
     

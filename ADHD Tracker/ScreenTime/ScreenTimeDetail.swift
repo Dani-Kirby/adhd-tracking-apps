@@ -9,27 +9,29 @@ import SwiftUI
 import SwiftData
 
 struct ScreenTimeDetail: View {
-    @Bindable var eventDay : EventDay
+    @Bindable var screenTime: ScreenTime
     let isNew : Bool
     
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     
-    init(eventDay: EventDay, isNew: Bool = false) {
-        self.eventDay = eventDay
+    @Query private var eventDays : [EventDay]
+    
+    init(screenTime: ScreenTime, isNew: Bool = false) {
+        self.screenTime = screenTime
         self.isNew = isNew
     }
     
     var body: some View {
         Form {
-            DatePicker("Date", selection: $eventDay.calendarDate, displayedComponents: .date)
-            Picker("Hours", selection: $eventDay.screenTime.hours) {
+            DatePicker("Date", selection: $screenTime.calendarDate, displayedComponents: .date)
+            Picker("Hours", selection: $screenTime.hours) {
                 ForEach(0...23, id: \.self) {
                     hours in
                     Text("\(hours)")
                 }
             }
-            Picker("Minutes", selection: $eventDay.screenTime.minutes) {
+            Picker("Minutes", selection: $screenTime.minutes) {
                 ForEach(0...59, id: \.self) {
                     minutes in
                     Text("\(minutes)")
@@ -46,7 +48,7 @@ struct ScreenTimeDetail: View {
                 }
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
-                        modelContext.delete(eventDay.screenTime)
+                        modelContext.delete(screenTime)
                         dismiss()
                     }
                 }
@@ -57,14 +59,14 @@ struct ScreenTimeDetail: View {
 
 #Preview {
     NavigationStack {
-        ScreenTimeDetail(eventDay: SampleData.shared.eventDay)
+        ScreenTimeDetail(screenTime: SampleData.shared.screenTime)
     }
     .modelContainer(SampleData.shared.modelContainer)
 }
 
 #Preview("New Screen Time") {
     NavigationStack {
-        ScreenTimeDetail(eventDay: SampleData.shared.eventDay, isNew: true)
+        ScreenTimeDetail(screenTime: SampleData.shared.screenTime, isNew: true)
 //            .navigationBarTitleDisplayMode(.inline)
          
     }

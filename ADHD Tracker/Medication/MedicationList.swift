@@ -10,23 +10,24 @@ import SwiftData
 
 struct MedicationList: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(sort:\EventDay.calendarDate) private var eventDays: [EventDay]
-    @State private var newDay: EventDay?
+    @Query(sort:\Medication.calendarDate) private var medications : [Medication]
+    
+    @State private var newMed: Medication?
     
     var body: some View {
         NavigationSplitView {
             Group {
-                if !eventDays.isEmpty {
+                if !medications.isEmpty {
                     List {
-                        ForEach(eventDays) {
-                            day in
+                        ForEach(medications) {
+                            med in
                             NavigationLink {
-                                MedicationDetail(eventDay: day)
+                                MedicationDetail(medication: med)
                             } label: {
                                 HStack {
-                                    Text("\(day.calendarDate.formatted(date: .complete, time: .omitted))")
+                                    Text("\(med.calendarDate.formatted(date: .complete, time: .omitted))")
                                     Spacer()
-                                    Text("\(day.medication.taken)")
+                                    Text("\(med.taken)")
                                 }
                             }
                         }
@@ -47,9 +48,9 @@ struct MedicationList: View {
                     }
                 }
             }
-            .sheet(item: $newDay) { day in
+            .sheet(item: $newMed) { med in
                 NavigationStack {
-                    MedicationDetail(eventDay: day, isNew: true)
+                    MedicationDetail(medication: med, isNew: true)
                 }
                 .interactiveDismissDisabled()
             }
@@ -61,16 +62,16 @@ struct MedicationList: View {
     
     private func addMed() {
         withAnimation {
-            let newItem = EventDay(calendarDate: Date.now, sleep: Sleep(hours: 0, minutes: 0), screenTime: ScreenTime(hours: 0, minutes: 0), bloodPressure: BloodPressure(systolic: 0, diastolic: 0, time: Date.now), medication: Medication(name: "", dosage: "", units: "", time: Date.now, taken: false))
+            let newItem = Medication(name: "", dosage: 0, units: "", date: Date.now, time: Date.now, taken: false, scheduleStart: 8, scheduleEnd: 10)
             modelContext.insert(newItem)
-            newDay = newItem
+            newMed = newItem
         }
     }
     
     private func deleteMed(offsets: IndexSet) {
         withAnimation {
             for index in offsets {
-                modelContext.delete(eventDays[index].medication
+                modelContext.delete(medications[index]
                 )
             }
         }

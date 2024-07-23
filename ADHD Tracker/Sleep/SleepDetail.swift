@@ -9,28 +9,30 @@ import SwiftUI
 import SwiftData
 
 struct SleepDetail: View {
-    @Bindable var eventDay: EventDay
+    @Bindable var sleep : Sleep
     let isNew : Bool
     
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     
-    init(eventDay: EventDay, isNew: Bool = false) {
-        self.eventDay = eventDay
+    @Query private var eventDay: [EventDay]
+    
+    init(sleep: Sleep, isNew: Bool = false) {
+        self.sleep = sleep
         self.isNew = isNew
     }
     
     
     var body: some View {
         Form {
-            DatePicker("Date", selection: $eventDay.calendarDate, displayedComponents: .date)
-            Picker("Hours", selection: $eventDay.sleep.hours) {
+            DatePicker("Date", selection: $sleep.calendarDate, displayedComponents: .date)
+            Picker("Hours", selection: $sleep.hours) {
                 ForEach(0...23, id: \.self) {
                     hours in
                     Text("\(hours)")
                 }
             }
-            Picker("Minutes", selection: $eventDay.sleep.minutes) {
+            Picker("Minutes", selection: $sleep.minutes) {
                 ForEach(0...59, id: \.self) {
                     minutes in
                     Text("\(minutes)")
@@ -47,7 +49,7 @@ struct SleepDetail: View {
                 }
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
-                        modelContext.delete(eventDay.sleep)
+                        modelContext.delete(sleep)
                         dismiss()
                     }
                 }
@@ -58,14 +60,14 @@ struct SleepDetail: View {
 
 #Preview {
     NavigationStack {
-        SleepDetail(eventDay: SampleData.shared.eventDay)
+        SleepDetail(sleep: SampleData.shared.sleep)
     }
     .modelContainer(SampleData.shared.modelContainer)
 }
 
 #Preview("New Sleep") {
     NavigationStack {
-        SleepDetail( eventDay: SampleData.shared.eventDay, isNew: true)
+        SleepDetail( sleep: SampleData.shared.sleep, isNew: true)
             .navigationBarTitleDisplayMode(.inline)
          
     }

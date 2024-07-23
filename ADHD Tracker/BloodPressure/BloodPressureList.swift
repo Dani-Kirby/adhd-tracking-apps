@@ -10,26 +10,27 @@ import SwiftData
 
 struct BloodPressureList: View {
     @Environment(\.modelContext) private var modelContext
-//    @Query (sort:\BloodPressure.time) private var bloodPressures: [BloodPressure]
-    @Query private var eventDays: [EventDay]
-    @State private var newDay : EventDay?
+    @Query (sort:\BloodPressure.time) private var bloodPressures: [BloodPressure]
+    @State private var newBP : BloodPressure?
     
     var body: some View {
         NavigationSplitView {
             Group {
-                if !eventDays.isEmpty {
+                if !bloodPressures.isEmpty {
                     List {
-                        ForEach(eventDays) { day in
+                        ForEach(bloodPressures) { bp in
                             NavigationLink {
-                                BloodPressureDetail(eventDay: day)
+                                BloodPressureDetail(bloodPressure: bp)
                                     .navigationTitle("Blood Pressure")
                             } label: {
                                 HStack {
-                                    Text("\( day.calendarDate.formatted(date: .complete, time: .omitted))")
+                                    Text("\( bp.calendarDate.formatted(date: .complete, time: .omitted))")
                                     Spacer()
-                                    Text(day.bloodPressure.time, format: Date.FormatStyle(time: .shortened))
+                                    Text(bp.time, format: Date.FormatStyle(time: .shortened))
                                     Spacer()
-                                    Text("\(day.bloodPressure.systolic)/\(day.bloodPressure.diastolic)")
+                                    Text("\(bp.systolic)/\(bp.diastolic)")
+
+                                    
                                 }
 
                             }
@@ -51,9 +52,9 @@ struct BloodPressureList: View {
                     }
                 }
             }
-            .sheet(item: $newDay) { day in
+            .sheet(item: $newBP) { bp in
                 NavigationStack {
-                    BloodPressureDetail(eventDay: day, isNew: true)
+                    BloodPressureDetail(bloodPressure: bp, isNew: true)
                 }
                 .interactiveDismissDisabled()
             }
@@ -65,16 +66,16 @@ struct BloodPressureList: View {
         
         private func addBloodPressure() {
             withAnimation {
-                let newItem = EventDay(calendarDate: Date.now, sleep: Sleep(hours: 0, minutes: 0), screenTime: ScreenTime(hours: 0, minutes: 0), bloodPressure: BloodPressure(systolic: 0, diastolic: 0, time: Date.now), medication: Medication(name: "", dosage: "", units: "", time: Date.now, taken: false))
+                let newItem = BloodPressure(systolic: 120, diastolic: 80, time: Date.now, date: Date.now)
                 modelContext.insert(newItem)
-                newDay = newItem
+                newBP = newItem
             }
         }
         
         private func deleteBloodPressure(offsets: IndexSet) {
             withAnimation {
                 for index in offsets {
-                    modelContext.delete(eventDays[index].bloodPressure)
+                    modelContext.delete(bloodPressures[index])
                 }
             }
     

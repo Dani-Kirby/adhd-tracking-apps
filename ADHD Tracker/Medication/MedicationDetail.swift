@@ -9,32 +9,34 @@ import SwiftUI
 import SwiftData
 
 struct MedicationDetail: View {
-    @Bindable var eventDay: EventDay
+    @Bindable var medication: Medication
     let isNew: Bool
     
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     
-    init(eventDay: EventDay, isNew: Bool = false) {
-        self.eventDay = eventDay
+    @Query private var eventDays: [EventDay]
+    
+    init(medication: Medication, isNew: Bool = false) {
+        self.medication = medication
         self.isNew = isNew
     }
     
     var body: some View {
         Form {
-            DatePicker("Time", selection: $eventDay.medication.time, displayedComponents: [.hourAndMinute])
+            DatePicker("Time", selection: $medication.calendarDate, displayedComponents: [.hourAndMinute])
         }
     }
 }
 
 #Preview {
     NavigationStack {
-        MedicationDetail(eventDay: SampleData.shared.eventDay)
+        MedicationDetail(medication: SampleData.shared.medication)
     }
 }
 #Preview("New Medication") {
     NavigationStack {
-        MedicationDetail(eventDay: SampleData.shared.eventDay, isNew: true)
+        MedicationDetail(medication: SampleData.shared.medication, isNew: true)
             .navigationBarTitleDisplayMode(.inline)
     }
 }

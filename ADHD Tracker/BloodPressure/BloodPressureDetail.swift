@@ -9,49 +9,56 @@ import SwiftUI
 import SwiftData
 
 struct BloodPressureDetail: View {
-    @Bindable var eventDay: EventDay
+    @Bindable var bloodPressure: BloodPressure
     let isNew : Bool
     
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     
-    init(eventDay: EventDay, isNew: Bool = false) {
-        self.eventDay = eventDay
+    @Query private var eventDays: [EventDay]
+    
+    init(bloodPressure: BloodPressure, isNew: Bool = false) {
+        self.bloodPressure = bloodPressure
         self.isNew = isNew
     }
     
     
     var body: some View {
         Form {
-            DatePicker("Date", selection: $eventDay.calendarDate, displayedComponents: [.date])
-            DatePicker("Time", selection: $eventDay.bloodPressure.time, displayedComponents: [.hourAndMinute])
-            Picker("Systolic", selection: $eventDay.bloodPressure.systolic) {
+            DatePicker("Date", selection: $bloodPressure.calendarDate, displayedComponents: [.date])
+            //            ForEach(bloodPressure) {
+//            bp in
+            DatePicker("Time", selection: $bloodPressure.time, displayedComponents: [.hourAndMinute])
+            Picker("Systolic", selection: $bloodPressure.systolic) {
                 ForEach(80...200, id: \.self) {
                     systolic in
                     Text("\(systolic)")
                 }
             }
-            Picker("Diastolic", selection: $eventDay.bloodPressure.diastolic) {
+            Picker("Diastolic", selection: $bloodPressure.diastolic) {
                 ForEach(40...120, id: \.self) {
                     diastolic in
                     Text("\(diastolic)")
                 }
             }
+//        }
+         
+     
         }
         .navigationTitle(isNew ? "Record Blood Pressure" : "Edit Blood Pressure")
         .toolbar {
             if isNew {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                }
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        modelContext.delete(eventDay.bloodPressure)
-                        dismiss()
-                    }
-                }
+//                ToolbarItem(placement: .confirmationAction) {
+//                    Button("Done") {
+//                        dismiss()
+//                    }
+//                }
+//                ToolbarItem(placement: .cancellationAction) {
+//                    Button("Cancel") {
+//                        modelContext.delete(eventDay.bloodPressure)
+//                        dismiss()
+//                    }
+//                }
             }
 
         }
@@ -60,14 +67,14 @@ struct BloodPressureDetail: View {
 
 #Preview {
     NavigationStack {
-        BloodPressureDetail(eventDay: SampleData.shared.eventDay)
+        BloodPressureDetail(bloodPressure: SampleData.shared.bloodPressure)
     }
     .modelContainer(SampleData.shared.modelContainer)
 }
 
 #Preview("New BP") {
     NavigationStack {
-        BloodPressureDetail(eventDay: SampleData.shared.eventDay, isNew: true)
+        BloodPressureDetail(bloodPressure: SampleData.shared.bloodPressure, isNew: true)
 //            .navigationBarTitleDisplayMode(.inline)
          
     }
