@@ -92,7 +92,8 @@ struct EventDayDetail: View {
                     ForEach(medications) {
                         med in
                         HStack {
-                            Text("\(med.name)")
+//                            Text("\(med.name)")
+                            Toggle("\(med.name)", isOn: $medication.tookAll)
                         }
                     }
                 }

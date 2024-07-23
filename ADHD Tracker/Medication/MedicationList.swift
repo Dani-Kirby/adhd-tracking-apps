@@ -27,7 +27,7 @@ struct MedicationList: View {
                                 HStack {
                                     Text("\(med.calendarDate.formatted(date: .complete, time: .omitted))")
                                     Spacer()
-                                    Text("\(med.taken)")
+                                    Text("\(med.tookAll)")
                                 }
                             }
                         }
@@ -62,7 +62,7 @@ struct MedicationList: View {
     
     private func addMed() {
         withAnimation {
-            let newItem = Medication(name: "", dosage: 0, units: "", date: Date.now, time: Date.now, taken: false, scheduleStart: 8, scheduleEnd: 10)
+            let newItem = Medication(name: "", dosage: 0, units: "", date: Date.now, time: Date.now, tookAll: false, scheduleStart: 8, scheduleEnd: 10)
             modelContext.insert(newItem)
             newMed = newItem
         }
