@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Box, 
   Typography, 
@@ -19,7 +19,16 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  Radio,
+  RadioGroup,
+  FormControl,
+  FormLabel,
+  Select,
+  MenuItem,
+  InputLabel,
+  SelectChangeEvent,
+  Collapse
 } from '@mui/material';
 import { 
   CheckCircle, 
@@ -28,11 +37,13 @@ import {
   AddCircleOutline,
   ScheduleOutlined,
   MedicationOutlined,
+  RepeatOutlined,
   Edit as EditIcon,
-  Delete as DeleteIcon
+  Delete as DeleteIcon,
+  ExpandMore as ExpandMoreIcon
 } from '@mui/icons-material';
 import { useMedicationData, useTags } from '../../contexts/AppProvider';
-import { MedicationEntry, MedicationDose, Tag } from '../../types';
+import { MedicationEntry, MedicationDose, Tag, RecurrencePattern, DayOfWeek } from '../../types';
 import { format, parse } from 'date-fns';
 import { TagSelector, TagFilter, TagList } from '../common/TagComponents';
 
@@ -68,11 +79,18 @@ const MedicationTracker: React.FC<MedicationTrackerProps> = ({ globalFilterTags 
   const [medication, setMedication] = useState('');
   const [dosage, setDosage] = useState('');
   const [isAsNeeded, setIsAsNeeded] = useState(false);
+  const [isRecurring, setIsRecurring] = useState(false);
   
   // State for scheduled doses
   const [scheduledDoses, setScheduledDoses] = useState<MedicationDose[]>([
     { scheduledTime: '', takenTime: undefined, taken: false }
   ]);
+
+  // Recurrence pattern state
+  const [recurrenceType, setRecurrenceType] = useState<'daily' | 'weekly' | 'specificDays'>('daily');
+  const [recurrenceInterval, setRecurrenceInterval] = useState(1);
+  const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>([]);
+  const [recurrenceEndDate, setRecurrenceEndDate] = useState('');
   
   // Edit mode state
   const [editMode, setEditMode] = useState(false);
@@ -82,9 +100,30 @@ const MedicationTracker: React.FC<MedicationTrackerProps> = ({ globalFilterTags 
     setMedication('');
     setDosage('');
     setIsAsNeeded(false);
+    setIsRecurring(false);
     setScheduledDoses([{ scheduledTime: '', takenTime: undefined, taken: false }]);
     setSelectedTags([]);
+    setRecurrenceType('daily');
+    setRecurrenceInterval(1);
+    setSelectedDays([]);
+    setRecurrenceEndDate('');
     setShowAddForm(false);
+  };
+
+  // Handle recurrence type change
+  const handleRecurrenceTypeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRecurrenceType(event.target.value as 'daily' | 'weekly' | 'specificDays');
+  };
+
+  // Handle days of week selection
+  const handleDayOfWeekToggle = (day: DayOfWeek) => {
+    setSelectedDays(prev => {
+      if (prev.includes(day)) {
+        return prev.filter(d => d !== day);
+      } else {
+        return [...prev, day];
+      }
+    });
   };
 
   const addDoseTime = () => {
@@ -105,6 +144,24 @@ const MedicationTracker: React.FC<MedicationTrackerProps> = ({ globalFilterTags 
 
   const handleAddEntry = () => {
     if (medication && dosage && (isAsNeeded || scheduledDoses.some(dose => dose.scheduledTime))) {
+      // Build recurrence pattern if medication is recurring and not as-needed
+      let recurrencePattern: RecurrencePattern | undefined = undefined;
+      
+      if (isRecurring && !isAsNeeded) {
+        recurrencePattern = {
+          type: recurrenceType,
+          interval: recurrenceInterval,
+        };
+        
+        if (recurrenceType === 'specificDays' && selectedDays.length > 0) {
+          recurrencePattern.daysOfWeek = selectedDays;
+        }
+        
+        if (recurrenceEndDate) {
+          recurrencePattern.endDate = recurrenceEndDate;
+        }
+      }
+      
       if (editMode && editingEntry) {
         // Update existing entry
         const updatedEntry = {
@@ -114,6 +171,7 @@ const MedicationTracker: React.FC<MedicationTrackerProps> = ({ globalFilterTags 
           isAsNeeded,
           scheduledDoses: isAsNeeded ? [] : scheduledDoses.filter(dose => dose.scheduledTime),
           tags: selectedTags,
+          recurrencePattern: isRecurring && !isAsNeeded ? recurrencePattern : undefined,
         };
         
         updateItem(updatedEntry);
@@ -129,6 +187,7 @@ const MedicationTracker: React.FC<MedicationTrackerProps> = ({ globalFilterTags 
           scheduledDoses: isAsNeeded ? [] : scheduledDoses.filter(dose => dose.scheduledTime),
           asNeededDoses: [],
           tags: selectedTags,
+          recurrencePattern: isRecurring && !isAsNeeded ? recurrencePattern : undefined,
         };
         
         addItem(newEntry);
@@ -147,6 +206,18 @@ const MedicationTracker: React.FC<MedicationTrackerProps> = ({ globalFilterTags 
   }>({ entry: null, index: 0, isAsNeeded: false, currentStatus: false });
   const [selectedTime, setSelectedTime] = useState('');
   const [useCurrentTime, setUseCurrentTime] = useState(true);
+  
+  // State to track expanded/collapsed status of medication entries
+  const [expandedEntries, setExpandedEntries] = useState<Record<string, boolean>>({});
+  
+  // Toggle expanded/collapsed state
+  const toggleExpanded = useCallback((entryId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setExpandedEntries(prev => ({
+      ...prev,
+      [entryId]: !prev[entryId]
+    }));
+  }, []);
 
   // Opens time selection dialog
   const openTimeSelectionDialog = (
@@ -378,10 +449,30 @@ const MedicationTracker: React.FC<MedicationTrackerProps> = ({ globalFilterTags 
     setMedication(entry.medication);
     setDosage(entry.dosage);
     setIsAsNeeded(entry.isAsNeeded);
+    setIsRecurring(!!entry.recurrencePattern);
     setSelectedTags(entry.tags);
     
     if (!entry.isAsNeeded) {
       setScheduledDoses(entry.scheduledDoses);
+    }
+    
+    // Set recurrence pattern if present
+    if (entry.recurrencePattern) {
+      setRecurrenceType(entry.recurrencePattern.type);
+      setRecurrenceInterval(entry.recurrencePattern.interval || 1);
+      
+      if (entry.recurrencePattern.daysOfWeek) {
+        setSelectedDays(entry.recurrencePattern.daysOfWeek);
+      } else {
+        setSelectedDays([]);
+      }
+      
+      setRecurrenceEndDate(entry.recurrencePattern.endDate || '');
+    } else {
+      setRecurrenceType('daily');
+      setRecurrenceInterval(1);
+      setSelectedDays([]);
+      setRecurrenceEndDate('');
     }
     
     setEditMode(true);
@@ -578,6 +669,114 @@ const MedicationTracker: React.FC<MedicationTrackerProps> = ({ globalFilterTags 
                 </Box>
               )}
               
+              {/* Recurring option - only show if not "as needed" */}
+              {!isAsNeeded && (
+                <FormControlLabel
+                  control={
+                    <Switch 
+                      checked={isRecurring} 
+                      onChange={(e) => setIsRecurring(e.target.checked)} 
+                    />
+                  }
+                  label="Recurring medication"
+                />
+              )}
+              
+              {/* Recurrence pattern options - only show if recurring is enabled */}
+              {isRecurring && !isAsNeeded && (
+                <Box sx={{ mt: 2, mb: 2, p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Recurrence Pattern
+                  </Typography>
+                  
+                  <FormControl component="fieldset">
+                    <RadioGroup
+                      name="recurrence-type"
+                      value={recurrenceType}
+                      onChange={handleRecurrenceTypeChange}
+                    >
+                      <FormControlLabel 
+                        value="daily" 
+                        control={<Radio size="small" />} 
+                        label={
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Typography variant="body2">Daily</Typography>
+                            {recurrenceType === 'daily' && (
+                              <TextField
+                                label="Every"
+                                type="number"
+                                size="small"
+                                value={recurrenceInterval}
+                                onChange={(e) => setRecurrenceInterval(parseInt(e.target.value) || 1)}
+                                sx={{ ml: 2, width: 80 }}
+                                InputProps={{ 
+                                  inputProps: { min: 1 },
+                                  endAdornment: <Typography variant="body2" sx={{ ml: 1 }}>day(s)</Typography>
+                                }}
+                              />
+                            )}
+                          </Box>
+                        } 
+                      />
+                      <FormControlLabel 
+                        value="weekly" 
+                        control={<Radio size="small" />} 
+                        label={
+                          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                            <Typography variant="body2">Weekly</Typography>
+                            {recurrenceType === 'weekly' && (
+                              <TextField
+                                label="Every"
+                                type="number"
+                                size="small"
+                                value={recurrenceInterval}
+                                onChange={(e) => setRecurrenceInterval(parseInt(e.target.value) || 1)}
+                                sx={{ ml: 2, width: 80 }}
+                                InputProps={{ 
+                                  inputProps: { min: 1 },
+                                  endAdornment: <Typography variant="body2" sx={{ ml: 1 }}>week(s)</Typography>
+                                }}
+                              />
+                            )}
+                          </Box>
+                        } 
+                      />
+                      <FormControlLabel 
+                        value="specificDays" 
+                        control={<Radio size="small" />} 
+                        label="Specific days of week" 
+                      />
+                    </RadioGroup>
+                  </FormControl>
+                  
+                  {recurrenceType === 'specificDays' && (
+                    <Box sx={{ mt: 2, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                      {(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] as DayOfWeek[]).map(day => (
+                        <Chip
+                          key={day}
+                          label={day.charAt(0).toUpperCase() + day.slice(1, 3)}
+                          color={selectedDays.includes(day) ? "primary" : "default"}
+                          onClick={() => handleDayOfWeekToggle(day)}
+                          size="small"
+                        />
+                      ))}
+                    </Box>
+                  )}
+                  
+                  <Box sx={{ mt: 2 }}>
+                    <TextField
+                      label="End Date (Optional)"
+                      type="date"
+                      value={recurrenceEndDate}
+                      onChange={(e) => setRecurrenceEndDate(e.target.value)}
+                      InputLabelProps={{ shrink: true }}
+                      fullWidth
+                      size="small"
+                    />
+                  </Box>
+                </Box>
+              )}
+              
               <Box sx={{ mt: 2 }}>
                 <TagSelector 
                   selectedTags={selectedTags} 
@@ -612,44 +811,105 @@ const MedicationTracker: React.FC<MedicationTrackerProps> = ({ globalFilterTags 
                 <Paper 
                   key={entry.id} 
                   sx={{ 
-                    p: 2, 
                     borderRadius: 1,
                     border: '1px solid',
                     borderColor: 'divider',
                   }}
                   elevation={1}
                 >
-                  <Box sx={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between',
-                    alignItems: 'flex-start',
-                    mb: 1
-                  }}>
-                    <Box>
-                      <Typography variant="body2" color="text.secondary">
-                        {formatDateTime(entry.date)}
-                      </Typography>
-                      <Typography variant="h6" sx={{ mt: 0 }}>
-                        {entry.medication} - {entry.dosage}
-                      </Typography>
-                      
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
-                        <Chip 
-                          icon={entry.isAsNeeded ? <MedicationOutlined /> : <ScheduleOutlined />}
-                          label={entry.isAsNeeded ? "As Needed" : getScheduledProgress(entry)}
-                          color={entry.isAsNeeded ? "info" : (isAllScheduledTaken(entry) ? "success" : "primary")}
-                          size="small"
-                        />
+                  <Box 
+                    sx={{ 
+                      p: 2, 
+                      cursor: 'pointer',
+                      '&:hover': {
+                        backgroundColor: 'action.hover',
+                      },
+                    }}
+                    onClick={(e) => toggleExpanded(entry.id, e)}
+                  >
+                    <Box sx={{ 
+                      display: 'flex', 
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                    }}>
+                      <Box>
+                        <Typography variant="body2" color="text.secondary">
+                          {formatDateTime(entry.date)}
+                        </Typography>
+                        <Typography variant="h6" sx={{ mt: 0 }}>
+                          {entry.medication} - {entry.dosage}
+                        </Typography>
                         
-                        {entry.tags.length > 0 && (
-                          <TagList tags={entry.tags} small />
-                        )}
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+                          <Chip 
+                            icon={entry.isAsNeeded ? <MedicationOutlined /> : <ScheduleOutlined />}
+                            label={entry.isAsNeeded ? "As Needed" : getScheduledProgress(entry)}
+                            color={entry.isAsNeeded ? "info" : (isAllScheduledTaken(entry) ? "success" : "primary")}
+                            size="small"
+                          />
+                          
+                          {entry.recurrencePattern && (
+                            <Chip 
+                              icon={<RepeatOutlined />}
+                              label={
+                                entry.recurrencePattern.type === 'daily' 
+                                  ? `Daily` 
+                                  : entry.recurrencePattern.type === 'weekly' 
+                                    ? `Weekly` 
+                                    : 'Custom'
+                              }
+                              color="secondary"
+                              size="small"
+                            />
+                          )}
+                          
+                          {entry.tags.length > 0 && (
+                            <TagList tags={entry.tags} small />
+                          )}
+                        </Box>
                       </Box>
-                      <Box sx={{ display: 'flex', gap: 1 }}>
+                      
+                      <Box sx={{ display: 'flex', alignItems: 'center', ml: 1 }}>
+                        {entry.isAsNeeded && (
+                          <Button
+                            variant="outlined"
+                            size="small"
+                            startIcon={<AddCircleOutline />}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleAddAsNeededDose(entry, e);
+                            }}
+                            sx={{ mr: 1 }}
+                          >
+                            Take Dose
+                          </Button>
+                        )}
+                        <IconButton
+                          onClick={(e) => toggleExpanded(entry.id, e)}
+                          sx={{
+                            transform: expandedEntries[entry.id] ? 'rotate(180deg)' : 'rotate(0deg)',
+                            transition: 'transform 0.3s',
+                          }}
+                          size="small"
+                        >
+                          <ExpandMoreIcon />
+                        </IconButton>
+                      </Box>
+                    </Box>
+                  </Box>
+                  
+                  <Collapse in={expandedEntries[entry.id]} timeout="auto" unmountOnExit>
+                    <Box sx={{ p: 2, pt: 0 }}>
+                      <Divider sx={{ my: 1 }} />
+                      
+                      <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
                         <IconButton 
                           size="small" 
                           color="primary" 
-                          onClick={(e) => handleEditEntry(entry, e)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleEditEntry(entry, e);
+                          }}
                           title="Edit medication"
                         >
                           <EditIcon />
@@ -657,31 +917,19 @@ const MedicationTracker: React.FC<MedicationTrackerProps> = ({ globalFilterTags 
                         <IconButton 
                           size="small" 
                           color="error" 
-                          onClick={(e) => handleDeleteEntry(entry.id, e)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteEntry(entry.id, e);
+                          }}
                           title="Delete medication"
                         >
                           <DeleteIcon />
                         </IconButton>
                       </Box>
-                    </Box>
-                    
-                    {entry.isAsNeeded && (
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<AddCircleOutline />}
-                        onClick={(e) => handleAddAsNeededDose(entry, e)}
-                      >
-                        Take Dose
-                      </Button>
-                    )}
-                  </Box>
-                  
-                  <Divider sx={{ my: 1 }} />
-                  
-                  {/* Scheduled doses section */}
-                  {!entry.isAsNeeded && entry.scheduledDoses.length > 0 && (
-                    <Box>
+                      
+                      {/* Scheduled doses section */}
+                      {!entry.isAsNeeded && entry.scheduledDoses.length > 0 && (
+                        <Box>
                       <Typography variant="subtitle2" gutterBottom>
                         Scheduled Doses
                       </Typography>
@@ -733,9 +981,9 @@ const MedicationTracker: React.FC<MedicationTrackerProps> = ({ globalFilterTags 
                     </Box>
                   )}
                   
-                  {/* As-needed doses section */}
-                  {entry.isAsNeeded && entry.asNeededDoses.length > 0 && (
-                    <Box>
+                      {/* As-needed doses section */}
+                      {entry.isAsNeeded && entry.asNeededDoses.length > 0 && (
+                        <Box>
                       <Typography variant="subtitle2" gutterBottom>
                         Doses Taken
                       </Typography>
@@ -784,8 +1032,10 @@ const MedicationTracker: React.FC<MedicationTrackerProps> = ({ globalFilterTags 
                           </Box>
                         ))}
                       </Box>
+                        </Box>
+                      )}
                     </Box>
-                  )}
+                  </Collapse>
                 </Paper>
               ))}
             </Stack>

@@ -7,7 +7,8 @@ import {
   ScreenTimeContext, 
   MedicationContext, 
   TodoContext, 
-  CalendarContext 
+  CalendarContext,
+  BloodPressureContext
 } from './DataContext';
 
 interface AppProviderProps {
@@ -29,7 +30,9 @@ const DataProviders: React.FC<AppProviderProps> = ({ children }) => {
             <MedicationContext.DataProvider>
               <TodoContext.DataProvider>
                 <CalendarContext.DataProvider>
-                  {children}
+                  <BloodPressureContext.DataProvider>
+                    {children}
+                  </BloodPressureContext.DataProvider>
                 </CalendarContext.DataProvider>
               </TodoContext.DataProvider>
             </MedicationContext.DataProvider>
@@ -60,3 +63,4 @@ export const useScreenTimeData = ScreenTimeContext.useData;
 export const useMedicationData = MedicationContext.useData;
 export const useTodoData = TodoContext.useData;
 export const useCalendarData = CalendarContext.useData;
+export const useBloodPressureData = BloodPressureContext.useData;
