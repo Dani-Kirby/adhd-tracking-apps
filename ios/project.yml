@@ -1,0 +1,41 @@
+name: ADHDTracker
+options:
+  bundleIdPrefix: com.example
+  deploymentTarget:
+    iOS: 15.0
+
+settings:
+  base:
+    DEVELOPMENT_TEAM: "" # Add your team ID here
+    SWIFT_VERSION: 5.0
+
+targets:
+  ADHDTracker:
+    type: application
+    platform: iOS
+    sources:
+      - ADHDTracker
+    settings:
+      base:
+        INFOPLIST_FILE: ADHDTracker/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.adhdtracker
+    info:
+      path: ADHDTracker/Info.plist
+      properties:
+        CFBundleName: ADHDTracker
+        CFBundleDisplayName: ADHD Tracker
+        CFBundlePackageType: APPL
+        CFBundleShortVersionString: 1.0.0
+        CFBundleVersion: 1
+        LSRequiresIPhoneOS: true
+        UILaunchStoryboardName: LaunchScreen
+        UIRequiredDeviceCapabilities: [armv7]
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
