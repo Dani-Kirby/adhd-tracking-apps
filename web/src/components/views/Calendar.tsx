@@ -182,83 +182,95 @@ const Calendar: React.FC<CalendarProps> = ({ globalFilterTags = [] }) => {
 
   return (
     <Box>
-      <Box sx={{ mb: 2 }}>
-        <TextField
-          label="Date"
-          type="date"
-          value={selectedDate}
-          onChange={(e) => setSelectedDate(e.target.value)}
-          InputLabelProps={{ shrink: true }}
-          fullWidth
-          size="small"
-        />
-      </Box>
-      
-      <Box sx={{ mb: 2 }}>
-        <TagFilter 
-          selectedTags={filterTags} 
-          onChange={setFilterTags} 
-        />
-      </Box>
-      
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-        <Typography variant="subtitle1">
-          {format(parseISO(selectedDate), 'EEEE, MMMM d, yyyy')}
-        </Typography>
-        <Button
-          variant="outlined"
-          size="small"
-          onClick={() => handleOpenEventDialog(false)}
-        >
-          Add Event
-        </Button>
-      </Box>
-
-      {sortedEvents.length === 0 ? (
-        <Box sx={{ textAlign: 'center', py: 2 }}>
-          <Typography variant="body2" color="text.secondary">
-            No events scheduled for this day.
+      <Paper sx={{ p: 2, mb: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+          <Box>
+            <Typography variant="h6" gutterBottom>Calendar Events</Typography>
+            <Box sx={{ mb: 2 }}>
+              <TagFilter 
+                selectedTags={filterTags} 
+                onChange={setFilterTags} 
+              />
+            </Box>
+          </Box>
+          
+          <Button
+            variant="outlined"
+            color="primary"
+            size="small"
+            onClick={() => handleOpenEventDialog(false)}
+          >
+            Add Event
+          </Button>
+        </Box>
+        
+        <Box sx={{ mb: 2 }}>
+          <TextField
+            label="Date"
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            InputLabelProps={{ shrink: true }}
+            fullWidth
+            size="small"
+          />
+        </Box>
+        
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="subtitle1">
+            {format(parseISO(selectedDate), 'EEEE, MMMM d, yyyy')}
           </Typography>
         </Box>
-      ) : (
-        <Box>
-          {sortedEvents.map((event) => (
-            <Paper
-              key={event.id}
-              sx={{
-                p: 1.5,
-                mb: 1,
-                cursor: 'pointer',
-                borderLeft: event.allDay ? '4px solid #2196f3' : 'none',
-                '&:hover': {
-                  bgcolor: 'action.hover',
-                },
-              }}
-              onClick={() => handleViewEvent(event)}
-            >
-              <Typography variant="subtitle2">{event.title}</Typography>
-              {event.allDay ? (
-                <Typography variant="body2" color="primary">All day</Typography>
-              ) : (
-                <Typography variant="body2" color="text.secondary">
-                  {formatDateTime(event.startTime)} - {formatDateTime(event.endTime)}
-                </Typography>
-              )}
-              {event.location && (
-                <Typography variant="body2" color="text.secondary">
-                  {event.location}
-                </Typography>
-              )}
-              
-              {event.tags.length > 0 && (
-                <Box sx={{ mt: 0.5 }}>
-                  <TagList tags={event.tags} small />
-                </Box>
-              )}
-            </Paper>
-          ))}
-        </Box>
-      )}
+
+        {sortedEvents.length === 0 ? (
+          <Box sx={{ textAlign: 'center', py: 2 }}>
+            <Typography variant="body2" color="text.secondary">
+              No events scheduled for this day.
+            </Typography>
+          </Box>
+        ) : (
+          <Box>
+            {sortedEvents.map((event) => (
+              <Paper
+                key={event.id}
+                sx={{
+                  p: 1.5,
+                  mb: 1,
+                  cursor: 'pointer',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderLeft: event.allDay ? '4px solid #2196f3' : '1px solid',
+                  borderRadius: 1,
+                  '&:hover': {
+                    bgcolor: 'action.hover',
+                  },
+                }}
+                onClick={() => handleViewEvent(event)}
+              >
+                <Typography variant="subtitle2">{event.title}</Typography>
+                {event.allDay ? (
+                  <Typography variant="body2" color="primary">All day</Typography>
+                ) : (
+                  <Typography variant="body2" color="text.secondary">
+                    {formatDateTime(event.startTime)} - {formatDateTime(event.endTime)}
+                  </Typography>
+                )}
+                {event.location && (
+                  <Typography variant="body2" color="text.secondary">
+                    {event.location}
+                  </Typography>
+                )}
+                
+                {event.tags.length > 0 && (
+                  <Box sx={{ mt: 0.5 }}>
+                    <TagList tags={event.tags} small />
+                  </Box>
+                )}
+              </Paper>
+            ))}
+          </Box>
+        )}
+      </Paper>
 
       {/* Add/Edit Event Dialog */}
       <Dialog open={isEventDialogOpen} onClose={handleCloseEventDialog}>
@@ -273,12 +285,14 @@ const Calendar: React.FC<CalendarProps> = ({ globalFilterTags = [] }) => {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             variant="outlined"
+            size="small"
           />
           <FormControlLabel
             control={
               <Checkbox 
                 checked={allDay} 
                 onChange={(e) => setAllDay(e.target.checked)} 
+                size="small"
               />
             }
             label="All day"
@@ -294,6 +308,7 @@ const Calendar: React.FC<CalendarProps> = ({ globalFilterTags = [] }) => {
                 onChange={(e) => setStartTime(e.target.value)}
                 InputLabelProps={{ shrink: true }}
                 variant="outlined"
+                size="small"
               />
               <TextField
                 margin="dense"
@@ -304,6 +319,7 @@ const Calendar: React.FC<CalendarProps> = ({ globalFilterTags = [] }) => {
                 onChange={(e) => setEndTime(e.target.value)}
                 InputLabelProps={{ shrink: true }}
                 variant="outlined"
+                size="small"
               />
             </>
           )}
@@ -315,6 +331,7 @@ const Calendar: React.FC<CalendarProps> = ({ globalFilterTags = [] }) => {
             value={location}
             onChange={(e) => setLocation(e.target.value)}
             variant="outlined"
+            size="small"
           />
           
           <Box sx={{ mt: 2 }}>
@@ -325,10 +342,18 @@ const Calendar: React.FC<CalendarProps> = ({ globalFilterTags = [] }) => {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseEventDialog}>Cancel</Button>
+          <Button 
+            onClick={handleCloseEventDialog}
+            size="small"
+          >
+            Cancel
+          </Button>
           <Button 
             onClick={handleSaveEvent}
             disabled={!title || (!allDay && (!startTime || !endTime))}
+            color="primary"
+            variant="contained"
+            size="small"
           >
             {editMode ? 'Update' : 'Add'}
           </Button>
@@ -374,9 +399,26 @@ const Calendar: React.FC<CalendarProps> = ({ globalFilterTags = [] }) => {
               )}
             </DialogContent>
             <DialogActions>
-              <Button onClick={handleEditEvent} color="primary">Edit</Button>
-              <Button onClick={handleDeleteEvent} color="error">Delete</Button>
-              <Button onClick={handleCloseViewEventDialog}>Close</Button>
+              <Button 
+                onClick={handleEditEvent} 
+                color="primary"
+                size="small"
+              >
+                Edit
+              </Button>
+              <Button 
+                onClick={handleDeleteEvent} 
+                color="error"
+                size="small"
+              >
+                Delete
+              </Button>
+              <Button 
+                onClick={handleCloseViewEventDialog}
+                size="small"
+              >
+                Close
+              </Button>
             </DialogActions>
           </>
         )}

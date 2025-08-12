@@ -39,6 +39,7 @@ import ScreenTimeTracker from '../views/ScreenTimeTracker';
 import MedicationTracker from '../views/MedicationTracker';
 import TodoList from '../views/TodoList';
 import Calendar from '../views/Calendar';
+import { BloodPressureTracker } from '../views/BloodPressureTracker';
 import { TagFilter } from '../common/TagComponents';
 
 const Dashboard: React.FC = () => {
@@ -178,24 +179,39 @@ const Dashboard: React.FC = () => {
     contentRefs.current[viewId] = el;
   };
   
+  // Memoized view components to prevent unnecessary re-renders
+  const memoizedComponents = React.useMemo(() => {
+    // Create a stable object of component instances
+    return {
+      sleep: <SleepTracker globalFilterTags={globalFilterTags} />,
+      screenTime: <ScreenTimeTracker globalFilterTags={globalFilterTags} />,
+      medication: <MedicationTracker globalFilterTags={globalFilterTags} />,
+      todo: <TodoList globalFilterTags={globalFilterTags} />,
+      calendar: <Calendar globalFilterTags={globalFilterTags} />,
+      bloodPressure: <BloodPressureTracker globalFilterTags={globalFilterTags} />,
+    };
+  }, [globalFilterTags]); // Only recreate when globalFilterTags changes
+  
   // Render the appropriate component based on view type
-  const renderViewComponent = (view: ViewConfig) => {
-    // Pass global filter tags to each component
+  const renderViewComponent = React.useCallback((view: ViewConfig) => {
+    // Return the pre-memoized component instance
     switch (view.type) {
       case 'sleep':
-        return <SleepTracker globalFilterTags={globalFilterTags} />;
+        return memoizedComponents.sleep;
       case 'screenTime':
-        return <ScreenTimeTracker globalFilterTags={globalFilterTags} />;
+        return memoizedComponents.screenTime;
       case 'medication':
-        return <MedicationTracker globalFilterTags={globalFilterTags} />;
+        return memoizedComponents.medication;
       case 'todo':
-        return <TodoList globalFilterTags={globalFilterTags} />;
+        return memoizedComponents.todo;
       case 'calendar':
-        return <Calendar globalFilterTags={globalFilterTags} />;
+        return memoizedComponents.calendar;
+      case 'bloodPressure':
+        return memoizedComponents.bloodPressure;
       default:
         return <Typography>Unknown view type</Typography>;
     }
-  };
+  }, [memoizedComponents]);
 
   // State for drag and drop
   const [draggedView, setDraggedView] = useState<ViewConfig | null>(null);
@@ -263,7 +279,9 @@ const Dashboard: React.FC = () => {
     .filter(view => view.visible)
     .sort((a, b) => a.order - b.order);
 
-  // Check scrollable status after render and when views change
+  // Separate effects to avoid unnecessary re-runs
+  
+  // Effect for checking scrollable status - only runs when views change
   useEffect(() => {
     // Small delay to ensure content has rendered
     const timer = setTimeout(() => {
@@ -273,15 +291,34 @@ const Dashboard: React.FC = () => {
     }, 100);
     
     return () => clearTimeout(timer);
-  }, [visibleViews, globalFilterTags, expandedViews]);
+  }, [visibleViews, expandedViews]); // Removed globalFilterTags dependency
 
   return (
     <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        mb: 3,
+        position: 'relative'
+      }}>
         <Typography variant="h4" component="h1">
           ADHD Tracker Dashboard
         </Typography>
-        <Fab color="primary" aria-label="add" onClick={handleAddViewDialogOpen}>
+        <Fab 
+          color="primary" 
+          aria-label="add" 
+          onClick={handleAddViewDialogOpen}
+          sx={{
+            zIndex: 10,
+            position: 'relative',
+            marginLeft: 2,
+            '@media (max-width: 600px)': {
+              marginLeft: 1,
+              transform: 'scale(0.9)'
+            }
+          }}
+        >
           <AddIcon />
         </Fab>
       </Box>
@@ -303,7 +340,7 @@ const Dashboard: React.FC = () => {
         )}
       </Box>
 
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 3 }}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: { xs: 2, sm: 3 }, mb: 4 }}>
         {visibleViews.map((view) => (
           <Box 
             key={view.id} 
@@ -315,30 +352,42 @@ const Dashboard: React.FC = () => {
             sx={{ 
               width: { 
                 xs: '100%', 
-                md: 'calc(50% - 24px)', 
-                lg: 'calc(33.33% - 24px)' 
+                md: 'calc(50% - 16px)', 
+                lg: 'calc(33.33% - 16px)' 
               },
               cursor: 'move',
               opacity: draggedView?.id === view.id ? 0.5 : 1,
               transform: dragOverViewId === view.id ? 'scale(1.02)' : 'none',
               transition: 'transform 0.2s ease, opacity 0.2s ease',
+              mb: 1,
             }}
           >
             <Paper
+              elevation={2}
               sx={{
-                p: 3,
+                p: { xs: 2, sm: 3 },
                 display: 'flex',
                 flexDirection: 'column',
-                height: 'auto',
+                height: '100%',
                 position: 'relative',
                 transition: 'all 0.3s ease',
+                overflow: 'hidden',
                 '&:hover': {
                   transform: 'translateY(-2px)',
                   boxShadow: (theme) => theme.shadows[4],
                 },
               }}
             >
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+              <Box 
+                sx={{ 
+                  display: 'flex', 
+                  justifyContent: 'space-between', 
+                  alignItems: 'center', 
+                  mb: 2,
+                  position: 'relative',
+                  zIndex: 2
+                }}
+              >
                 <Typography variant="h6" component="h2">
                   {view.title}
                 </Typography>
@@ -349,9 +398,11 @@ const Dashboard: React.FC = () => {
                       <IconButton 
                         aria-label="expand" 
                         onClick={() => handleToggleExpand(view.id)}
+                        size="small"
                         sx={{
                           transform: expandedViews.has(view.id) ? 'rotate(180deg)' : 'rotate(0deg)',
                           transition: 'transform 0.3s ease',
+                          mr: 0.5
                         }}
                       >
                         <ExpandMoreIcon />
@@ -361,6 +412,7 @@ const Dashboard: React.FC = () => {
                   <IconButton 
                     aria-label="more" 
                     onClick={(e) => handleMenuOpen(e, view.id)}
+                    size="small"
                   >
                     <MoreVertIcon />
                   </IconButton>
@@ -371,7 +423,12 @@ const Dashboard: React.FC = () => {
                 sx={{ 
                   flexGrow: 1,
                   position: 'relative',
-                  mb: 1,
+                  mb: 2,
+                  overflow: 'hidden',
+                  '& > *': {
+                    // Apply to all direct children of the content box
+                    mb: { xs: 1, sm: 2 }
+                  }
                 }}
               >
                 {renderViewComponent(view)}
@@ -440,6 +497,7 @@ const Dashboard: React.FC = () => {
               <MenuItem value="medication">Medication</MenuItem>
               <MenuItem value="todo">To-Do List</MenuItem>
               <MenuItem value="calendar">Calendar</MenuItem>
+              <MenuItem value="bloodPressure">Blood Pressure</MenuItem>
             </Select>
           </FormControl>
         </DialogContent>
@@ -479,6 +537,7 @@ const Dashboard: React.FC = () => {
               <MenuItem value="medication">Medication</MenuItem>
               <MenuItem value="todo">To-Do List</MenuItem>
               <MenuItem value="calendar">Calendar</MenuItem>
+              <MenuItem value="bloodPressure">Blood Pressure</MenuItem>
             </Select>
           </FormControl>
         </DialogContent>

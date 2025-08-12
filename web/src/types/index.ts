@@ -27,6 +27,17 @@ export interface ScreenTimeEntry extends TrackableItem {
   category?: string;
 }
 
+// Days of week for recurring items
+export type DayOfWeek = 'monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday';
+
+// Recurrence pattern for scheduled items
+export interface RecurrencePattern {
+  type: 'daily' | 'weekly' | 'specificDays';
+  interval?: number; // For daily (every X days) or weekly (every X weeks)
+  daysOfWeek?: DayOfWeek[]; // For specificDays type
+  endDate?: string; // Optional end date for recurrence
+}
+
 // Medication tracking
 export interface MedicationDose {
   scheduledTime: string; // Original scheduled time (preserved)
@@ -40,6 +51,7 @@ export interface MedicationEntry extends TrackableItem {
   isAsNeeded: boolean;
   scheduledDoses: MedicationDose[]; // For scheduled medications with multiple times
   asNeededDoses: MedicationDose[]; // For tracking as-needed medication doses that were taken
+  recurrencePattern?: RecurrencePattern; // Optional recurrence pattern for recurring medications
 }
 
 // To-do item
