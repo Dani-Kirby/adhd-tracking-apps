@@ -60,8 +60,16 @@ export interface CalendarEvent extends TrackableItem {
   allDay: boolean;
 }
 
+// Blood pressure tracking
+export interface BloodPressureEntry extends TrackableItem {
+  systolic: number;
+  diastolic: number;
+  heartRate: number;
+  timeOfDay: string; // ISO string format
+}
+
 // View types for the dashboard
-export type ViewType = 'sleep' | 'screenTime' | 'medication' | 'todo' | 'calendar';
+export type ViewType = 'sleep' | 'screenTime' | 'medication' | 'todo' | 'calendar' | 'bloodPressure';
 
 // View configuration
 export interface ViewConfig {

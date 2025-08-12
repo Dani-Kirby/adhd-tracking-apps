@@ -182,3 +182,4 @@ export const ScreenTimeContext = createDataContext<import('../types').ScreenTime
 export const MedicationContext = createDataContext<import('../types').MedicationEntry>('medicationEntries');
 export const TodoContext = createDataContext<import('../types').TodoItem>('todoItems');
 export const CalendarContext = createDataContext<import('../types').CalendarEvent>('calendarEvents');
+export const BloodPressureContext = createDataContext<import('../types').BloodPressureEntry>('bloodPressureEntries');
