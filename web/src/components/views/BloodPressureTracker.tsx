@@ -146,6 +146,7 @@ export const BloodPressureTracker: React.FC = () => {
                   fullWidth
                   required
                   InputLabelProps={{ shrink: true }}
+                  data-testid="time-input"
                 />
               </Grid>
               <Grid sx={{ gridColumn: '1 / -1' }}>
