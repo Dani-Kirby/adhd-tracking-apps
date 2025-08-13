@@ -1,10 +1,22 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
+import { CssBaseline, ThemeProvider, createTheme, CircularProgress } from '@mui/material';
 import { AppProvider } from './contexts/AppProvider';
 import Login from './components/common/Login';
 import Dashboard from './components/views/Dashboard';
+import ErrorBoundary from './components/common/ErrorBoundary';
+import Layout from './components/common/Layout';
 import './App.css';
+import {sdk} from '@embrace-io/web-sdk';
+
+// Initialize Embrace SDK
+sdk.initSDK({
+  appID: 'ftudh',
+});
+
+// const App = () => {
+//   // rest of App...
+// };
 
 // Create a custom theme
 const theme = createTheme({
@@ -58,14 +70,20 @@ function App() {
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <AppProvider>
-        <Login>
-          <Router>
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              {/* Add more routes as needed */}
-            </Routes>
-          </Router>
-        </Login>
+        <ErrorBoundary>
+          <Login>
+            <Router>
+              <Layout>
+                <Suspense fallback={<CircularProgress />}>
+                  <Routes>
+                    <Route path="/" element={<Dashboard />} />
+                    {/* Add more routes as needed */}
+                  </Routes>
+                </Suspense>
+              </Layout>
+            </Router>
+          </Login>
+        </ErrorBoundary>
       </AppProvider>
     </ThemeProvider>
   );

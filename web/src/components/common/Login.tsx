@@ -111,13 +111,24 @@ const Login: React.FC<LoginProps> = ({ children }) => {
     <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
       <Box 
         sx={{ 
-          position: 'absolute', 
-          top: 16, 
-          right: 16, 
-          zIndex: 1000, 
+          position: 'fixed', 
+          top: 8, 
+          right: 24, 
+          zIndex: 1200, 
           display: 'flex', 
           alignItems: 'center',
-          gap: 1
+          gap: 1,
+          '& .MuiButton-root': {
+            color: 'text.primary',
+            borderColor: 'divider',
+            '&:hover': {
+              borderColor: 'primary.main',
+              color: 'primary.main'
+            }
+          },
+          '& .MuiTypography-root': {
+            color: 'text.primary'
+          }
         }}
       >
         {isGuest ? (

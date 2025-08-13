@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Box, 
   Typography, 
@@ -27,9 +27,11 @@ import { TagSelector, TagFilter, TagList } from '../common/TagComponents';
 
 interface TodoListProps {
   globalFilterTags?: Tag[];
+  viewTitle?: string;
+  viewId: string;
 }
 
-const TodoList: React.FC<TodoListProps> = ({ globalFilterTags = [] }) => {
+const TodoList: React.FC<TodoListProps> = ({ globalFilterTags = [], viewTitle, viewId }) => {
   const { items: allTodoItems, addItem, updateItem, deleteItem } = useTodoData();
   const [showAddForm, setShowAddForm] = useState(false);
   const [title, setTitle] = useState('');
@@ -38,27 +40,31 @@ const TodoList: React.FC<TodoListProps> = ({ globalFilterTags = [] }) => {
   const [notes, setNotes] = useState('');
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [filterTags, setFilterTags] = useState<Tag[]>([]);
-  const [todoItems, setTodoItems] = useState<TodoItem[]>(allTodoItems);
   // Edit mode state
   const [editMode, setEditMode] = useState(false);
   const [editingItem, setEditingItem] = useState<TodoItem | null>(null);
-  
-  // Filter items whenever the filter tags change, global filter tags change, or all items change
-  useEffect(() => {
+
+  // Memoized filtered and sorted items
+  const filteredAndSortedItems = React.useMemo(() => {
+    const filteredByView = allTodoItems.filter(item => item.viewId === viewId);
     const activeTags = [...filterTags, ...globalFilterTags];
-    
-    if (activeTags.length === 0) {
-      // No filters, show all items
-      setTodoItems(allTodoItems);
-    } else {
-      // Filter items that have at least one of the selected tags
-      setTodoItems(allTodoItems.filter(item => 
-        item.tags.some(itemTag => 
+    let filtered = filteredByView;
+    if (activeTags.length > 0) {
+      filtered = filteredByView.filter(item =>
+        item.tags.some(itemTag =>
           activeTags.some(filterTag => filterTag.id === itemTag.id)
         )
-      ));
+      );
     }
-  }, [filterTags, globalFilterTags, allTodoItems]);
+    // Sort items: incomplete first, then by priority
+    return [...filtered].sort((a, b) => {
+      if (a.completed !== b.completed) {
+        return a.completed ? 1 : -1;
+      }
+      const priorityOrder = { high: 0, medium: 1, low: 2 };
+      return priorityOrder[a.priority] - priorityOrder[b.priority];
+    });
+  }, [allTodoItems, filterTags, globalFilterTags, viewId]);
 
   const handlePriorityChange = (event: SelectChangeEvent) => {
     setPriority(event.target.value as 'low' | 'medium' | 'high');
@@ -96,6 +102,7 @@ const TodoList: React.FC<TodoListProps> = ({ globalFilterTags = [] }) => {
       } else {
         // Create new item
         const newItem: Omit<TodoItem, 'id'> = {
+          viewId,
           date: new Date().toISOString(),
           title,
           completed: false,
@@ -166,30 +173,18 @@ const TodoList: React.FC<TodoListProps> = ({ globalFilterTags = [] }) => {
     }
   };
 
-  // Sort items: incomplete first, then by priority
-  const sortedItems = [...todoItems].sort((a, b) => {
-    // Sort by completion status first
-    if (a.completed !== b.completed) {
-      return a.completed ? 1 : -1;
-    }
-    
-    // Then sort by priority
-    const priorityOrder = { high: 0, medium: 1, low: 2 };
-    return priorityOrder[a.priority] - priorityOrder[b.priority];
-  });
+
 
   return (
     <Box>
       <Paper sx={{ p: 2, mb: 2 }}>
         <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Box>
-            <Typography variant="h6" gutterBottom>To-Do List</Typography>
             <TagFilter 
               selectedTags={filterTags} 
               onChange={setFilterTags} 
             />
           </Box>
-          
           {!showAddForm && (
             <Button
               variant="outlined"
@@ -235,9 +230,57 @@ const TodoList: React.FC<TodoListProps> = ({ globalFilterTags = [] }) => {
                 label="Priority"
                 onChange={handlePriorityChange}
               >
-                <MenuItem value="low">Low</MenuItem>
-                <MenuItem value="medium">Medium</MenuItem>
-                <MenuItem value="high">High</MenuItem>
+                <MenuItem 
+                  value="low"
+                  sx={{
+                    '&::before': {
+                      content: '""',
+                      display: 'inline-block',
+                      width: '12px',
+                      height: '12px',
+                      borderRadius: '50%',
+                      backgroundColor: getPriorityColor('low'),
+                      marginRight: '8px',
+                      verticalAlign: 'middle'
+                    }
+                  }}
+                >
+                  Low
+                </MenuItem>
+                <MenuItem 
+                  value="medium"
+                  sx={{
+                    '&::before': {
+                      content: '""',
+                      display: 'inline-block',
+                      width: '12px',
+                      height: '12px',
+                      borderRadius: '50%',
+                      backgroundColor: getPriorityColor('medium'),
+                      marginRight: '8px',
+                      verticalAlign: 'middle'
+                    }
+                  }}
+                >
+                  Medium
+                </MenuItem>
+                <MenuItem 
+                  value="high"
+                  sx={{
+                    '&::before': {
+                      content: '""',
+                      display: 'inline-block',
+                      width: '12px',
+                      height: '12px',
+                      borderRadius: '50%',
+                      backgroundColor: getPriorityColor('high'),
+                      marginRight: '8px',
+                      verticalAlign: 'middle'
+                    }
+                  }}
+                >
+                  High
+                </MenuItem>
               </Select>
             </FormControl>
             
@@ -281,7 +324,7 @@ const TodoList: React.FC<TodoListProps> = ({ globalFilterTags = [] }) => {
           </Box>
         )}
 
-        {todoItems.length === 0 && filterTags.length === 0 && globalFilterTags.length === 0 && !showAddForm ? (
+  {filteredAndSortedItems.length === 0 && filterTags.length === 0 && globalFilterTags.length === 0 && !showAddForm ? (
           <Box sx={{ textAlign: 'center', py: 4 }}>
             <Typography variant="body1" color="text.secondary">
               No to-do items yet. Add some tasks to get started!
@@ -298,7 +341,7 @@ const TodoList: React.FC<TodoListProps> = ({ globalFilterTags = [] }) => {
           </Box>
         ) : (
           <List sx={{ p: 0 }}>
-            {sortedItems.map((item) => (
+            {filteredAndSortedItems.map((item) => (
               <ListItem
                 key={item.id}
                 dense
@@ -314,6 +357,17 @@ const TodoList: React.FC<TodoListProps> = ({ globalFilterTags = [] }) => {
                   borderColor: 'divider',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
+                  position: 'relative',
+                  '&::before': {
+                    content: '""',
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: '4px',
+                    background: `linear-gradient(${getPriorityColor(item.priority)}80, ${getPriorityColor(item.priority)})`,
+                    borderRadius: '4px 0 0 4px',
+                  },
                   '&:hover': {
                     bgcolor: item.completed ? 'action.selected' : 'action.hover',
                     opacity: item.completed ? 0.8 : 1,
@@ -341,9 +395,10 @@ const TodoList: React.FC<TodoListProps> = ({ globalFilterTags = [] }) => {
                     }}
                   />
                 </ListItemIcon>
-                <Box sx={{ width: '100%' }}>
+                <Box sx={{ width: '100%', mr: 8 }}>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <ListItemText
+                      sx={{ ml: -1 }}
                       primary={item.title}
                       secondary={
                         <>
@@ -366,13 +421,16 @@ const TodoList: React.FC<TodoListProps> = ({ globalFilterTags = [] }) => {
                         </>
                       }
                     />
-                    <ListItemSecondaryAction>
+                    <ListItemSecondaryAction sx={{ right: 8 }}>
                       <IconButton 
                         edge="end" 
                         aria-label="edit"
                         onClick={(e) => handleEditItem(item, e)}
                         size="small"
-                        sx={{ mr: 1 }}
+                        sx={{ 
+                          mr: -0.5,
+                          '& svg': { fontSize: '1.2rem' }
+                        }}
                       >
                         <EditIcon />
                       </IconButton>
@@ -381,6 +439,9 @@ const TodoList: React.FC<TodoListProps> = ({ globalFilterTags = [] }) => {
                         aria-label="delete"
                         onClick={() => handleDeleteItem(item.id)}
                         size="small"
+                        sx={{ 
+                          '& svg': { fontSize: '1.2rem' }
+                        }}
                       >
                         <DeleteIcon />
                       </IconButton>

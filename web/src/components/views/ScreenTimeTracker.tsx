@@ -8,9 +8,10 @@ import { TagSelector, TagFilter, TagList } from '../common/TagComponents';
 
 interface ScreenTimeTrackerProps {
   globalFilterTags?: Tag[];
+  viewId: string;
 }
 
-const ScreenTimeTracker: React.FC<ScreenTimeTrackerProps> = ({ globalFilterTags = [] }) => {
+const ScreenTimeTracker: React.FC<ScreenTimeTrackerProps> = ({ globalFilterTags = [], viewId }) => {
   const { items: allScreenTimeEntries, addItem, updateItem, deleteItem } = useScreenTimeData();
   const [showAddForm, setShowAddForm] = useState(false);
   const [hours, setHours] = useState('');
@@ -20,6 +21,12 @@ const ScreenTimeTracker: React.FC<ScreenTimeTrackerProps> = ({ globalFilterTags 
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [filterTags, setFilterTags] = useState<Tag[]>([]);
   const [screenTimeEntries, setScreenTimeEntries] = useState<ScreenTimeEntry[]>(allScreenTimeEntries);
+  
+  // Initialize logDate to today's date in YYYY-MM-DD format
+  const [logDate, setLogDate] = useState(() => {
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  });
   
   // Edit mode state
   const [editMode, setEditMode] = useState(false);
@@ -62,11 +69,15 @@ const ScreenTimeTracker: React.FC<ScreenTimeTrackerProps> = ({ globalFilterTags 
     setEditMode(false);
     setEditingEntry(null);
     setShowAddForm(false);
+    // Reset logDate to today
+    const today = new Date();
+    setLogDate(today.toISOString().split('T')[0]);
   };
 
   const handleAddEntry = () => {
     if (hours || minutes) { // At least one field must have a value
       const totalMinutes = (parseInt(hours) || 0) * 60 + (parseInt(minutes) || 0);
+      const now = new Date().toISOString();
       
       if (editMode && editingEntry) {
         const updatedEntry = {
@@ -75,7 +86,9 @@ const ScreenTimeTracker: React.FC<ScreenTimeTrackerProps> = ({ globalFilterTags 
           device: device || undefined,
           category: category || undefined,
           tags: selectedTags,
-          date: new Date().toISOString()
+          date: now, // When the entry was last updated
+          logDate, // The date the screen time is for
+          loggedAt: now // When it was first logged
         };
         
         updateItem(updatedEntry);
@@ -83,7 +96,10 @@ const ScreenTimeTracker: React.FC<ScreenTimeTrackerProps> = ({ globalFilterTags 
         setEditingEntry(null);
       } else {
         const newEntry: Omit<ScreenTimeEntry, 'id'> = {
-          date: new Date().toISOString(),
+          viewId,
+          date: now, // When the entry was created
+          logDate, // The date the screen time is for
+          loggedAt: now, // When it was logged
           duration: totalMinutes,
           device: device || undefined,
           category: category || undefined,
@@ -120,6 +136,7 @@ const ScreenTimeTracker: React.FC<ScreenTimeTrackerProps> = ({ globalFilterTags 
     setDevice(entry.device || '');
     setCategory(entry.category || '');
     setSelectedTags(entry.tags);
+    setLogDate(entry.logDate.split('T')[0]); // Set the log date
     
     setEditMode(true);
     setEditingEntry(entry);
@@ -194,13 +211,27 @@ const ScreenTimeTracker: React.FC<ScreenTimeTrackerProps> = ({ globalFilterTags 
                 {editMode ? 'Edit Screen Time' : 'Add Screen Time'}
               </Typography>
               
+              <TextField
+                label="Date"
+                type="date"
+                value={logDate}
+                onChange={(e) => setLogDate(e.target.value)}
+                fullWidth
+                margin="dense"
+                size="small"
+                InputLabelProps={{ shrink: true }}
+                sx={{ mb: 2 }}
+              />
+
               <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
                 <TextField
                   label="Hours"
                   type="number"
                   value={hours}
                   onChange={(e) => setHours(e.target.value)}
-                  InputProps={{ inputProps: { min: 0 } }}
+                  InputProps={{ 
+                    inputProps: { min: 0, style: { textAlign: 'center' } }
+                  }}
                   sx={{ flex: 1 }}
                   size="small"
                 />
@@ -223,7 +254,9 @@ const ScreenTimeTracker: React.FC<ScreenTimeTrackerProps> = ({ globalFilterTags 
                       setMinutes('');
                     }
                   }}
-                  InputProps={{ inputProps: { min: 0, max: 59 } }}
+                  InputProps={{ 
+                    inputProps: { min: 0, max: 59, style: { textAlign: 'center' } }
+                  }}
                   sx={{ flex: 1 }}
                   size="small"
                 />
@@ -359,7 +392,10 @@ const ScreenTimeTracker: React.FC<ScreenTimeTrackerProps> = ({ globalFilterTags 
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <Box>
                       <Typography variant="body2" color="text.secondary">
-                        {formatDateTime(entry.date)}
+                        {formatDateTime(entry.logDate)}
+                        <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                          (logged {formatDateTime(entry.loggedAt)})
+                        </Typography>
                       </Typography>
                       <Typography variant="body1">
                         {entry.device ? `${entry.device} - ` : ''}{formatDuration(entry.duration)}
@@ -376,7 +412,7 @@ const ScreenTimeTracker: React.FC<ScreenTimeTrackerProps> = ({ globalFilterTags 
                         </Box>
                       )}
                     </Box>
-                    <Box>
+                    <Box sx={{ display: 'flex', flexDirection: 'row' }}>
                       <IconButton 
                         size="small" 
                         color="primary" 

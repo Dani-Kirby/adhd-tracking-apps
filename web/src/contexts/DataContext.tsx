@@ -2,9 +2,14 @@ import React, { createContext, useContext, useState, useEffect, ReactNode, useCa
 import { TrackableItem } from '../types';
 import { useAuth } from './AuthContext';
 
-// Generate a random ID for new items
+// Generate a cryptographically secure random ID
 const generateId = (): string => {
-  return Math.random().toString(36).substring(2, 9);
+  // Create 6 bytes of randomness (12 hex characters)
+  const array = new Uint8Array(6);
+  window.crypto.getRandomValues(array);
+  return Array.from(array)
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
 };
 
 // Define the context type
@@ -16,6 +21,7 @@ interface DataContextType<T extends TrackableItem> {
   getItemById: (id: string) => T | undefined;
   getItemsByTag: (tagId: string) => T[];
   getItemsByDate: (date: string) => T[];
+  deleteItemsByViewId: (viewId: string) => void;
 }
 
 // Create a factory function to create a context for a specific data type
@@ -35,6 +41,7 @@ export function createDataContext<T extends TrackableItem>(storageKey: string) {
     getItemById: () => undefined,
     getItemsByTag: () => [],
     getItemsByDate: () => [],
+    deleteItemsByViewId: () => {},
   });
 
   // Custom hook to use the data context
@@ -47,10 +54,8 @@ export function createDataContext<T extends TrackableItem>(storageKey: string) {
 
   // Provider component with stable reference optimization
   const DataProvider: React.FC<DataProviderProps> = ({ children, initialItems = [] }) => {
-    // Use reducer instead of useState to avoid potential circular updates
     const [items, setItems] = useState<T[]>([]);
     const { currentUser, isGuest } = useAuth();
-    
     // Create a user-specific storage key
     const userStorageKey = useMemo(() => {
       if (currentUser) {
@@ -62,67 +67,124 @@ export function createDataContext<T extends TrackableItem>(storageKey: string) {
       }
     }, [currentUser, isGuest]);
 
+    // Helper to delete all items for a given viewId
+    const deleteItemsByViewId = useCallback((viewId: string) => {
+      setItems(prevItems => prevItems.filter(item => item.viewId !== viewId));
+    }, []);
+
     // Reference to track if we should save to localStorage
     const isInitialMount = React.useRef(true);
     
+    // Deep equality check for arrays of objects
+    function deepEqual(a: any, b: any): boolean {
+      return JSON.stringify(a) === JSON.stringify(b);
+    }
+
     // Load items from localStorage when component mounts or user changes
     useEffect(() => {
-      const storedItems = localStorage.getItem(userStorageKey);
-      if (storedItems) {
-        try {
-          setItems(JSON.parse(storedItems));
-        } catch (e) {
-          console.error("Failed to parse stored items:", e);
-          // Fallback to empty array on parse error
+      try {
+        const storedItems = localStorage.getItem(userStorageKey);
+        if (storedItems) {
+          try {
+            const parsed = JSON.parse(storedItems);
+            if (Array.isArray(parsed)) {
+              setItems(prev => deepEqual(prev, parsed) ? prev : parsed);
+            } else {
+              throw new Error('Stored data is not an array');
+            }
+          } catch (e) {
+            console.error(`[DataContext] Failed to parse stored items for ${userStorageKey}:`, e);
+            // Fallback to initial items on parse error
+            if (initialItems.length > 0) {
+              setItems(prev => deepEqual(prev, initialItems) ? prev : initialItems);
+            } else {
+              setItems([]);
+            }
+          }
+        } else if (initialItems.length > 0) {
+          setItems(prev => deepEqual(prev, initialItems) ? prev : initialItems);
+          // Save initial items directly without triggering effects
+          localStorage.setItem(userStorageKey, JSON.stringify(initialItems));
+        } else {
+          // Clear items when switching users if no data exists for new user
           setItems([]);
         }
-      } else if (initialItems.length > 0) {
-        setItems(initialItems);
-        // Save initial items directly without triggering effects
-        localStorage.setItem(userStorageKey, JSON.stringify(initialItems));
-      } else {
-        // Clear items when switching users if no data exists for new user
+        // After initial mount, we want to save changes
+        isInitialMount.current = false;
+      } catch (error) {
+        console.error(`[DataContext] Failed to access localStorage for ${userStorageKey}:`, error);
         setItems([]);
+        isInitialMount.current = false;
       }
-      
-      // After initial mount, we want to save changes
-      isInitialMount.current = false;
-    }, [userStorageKey]); // Only re-run when user changes (userStorageKey changes)
+    }, [userStorageKey, initialItems]); // Include initialItems in dependencies
 
-    // Separate effect for localStorage updates to break circular dependencies
+    // Log state changes for debugging
     useEffect(() => {
-      // Skip during initial mount to avoid duplicate saves
-      if (isInitialMount.current) return;
-      
-      // Debounce localStorage writes
-      const timeoutId = setTimeout(() => {
-        localStorage.setItem(userStorageKey, JSON.stringify(items));
-      }, 300);
-      
-      return () => clearTimeout(timeoutId);
-    }, [items, userStorageKey]);
+      if (!isInitialMount.current) {
+        console.log(`[DataContext] ${storageKey} items updated:`, items.length);
+      }
+    }, [items]);
 
     // Create stable action callbacks that don't depend on state
     // This is crucial to avoid unnecessary re-renders and potential loops
     
-    // Add a new item
+    // Add a new item with immediate storage
     const addItem = useCallback((item: Omit<T, 'id'>) => {
-      const newItem = { ...item, id: generateId() } as T;
-      setItems(prevItems => [...prevItems, newItem]);
-      return newItem;
-    }, []);
+      try {
+        const newItem = { ...item, id: generateId() } as T;
+        setItems(prevItems => {
+          const updatedItems = [...prevItems, newItem];
+          // Immediate save to localStorage
+          if (userStorageKey) {
+            localStorage.setItem(userStorageKey, JSON.stringify(updatedItems));
+          }
+          return updatedItems;
+        });
+        console.log(`[DataContext] Added new item to ${storageKey}:`, newItem);
+        return newItem;
+      } catch (error) {
+        console.error(`[DataContext] Failed to add item to ${storageKey}:`, error);
+        throw error;
+      }
+    }, [userStorageKey]);
 
-    // Update an existing item
+    // Update an existing item with immediate storage
     const updateItem = useCallback((updatedItem: T) => {
-      setItems(prevItems => 
-        prevItems.map(item => item.id === updatedItem.id ? updatedItem : item)
-      );
-    }, []);
+      try {
+        setItems(prevItems => {
+          const updatedItems = prevItems.map(item => 
+            item.id === updatedItem.id ? updatedItem : item
+          );
+          // Immediate save to localStorage
+          if (userStorageKey) {
+            localStorage.setItem(userStorageKey, JSON.stringify(updatedItems));
+          }
+          return updatedItems;
+        });
+        console.log(`[DataContext] Updated item in ${storageKey}:`, updatedItem);
+      } catch (error) {
+        console.error(`[DataContext] Failed to update item in ${storageKey}:`, error);
+        throw error;
+      }
+    }, [userStorageKey]);
 
-    // Delete an item
+    // Delete an item with immediate storage
     const deleteItem = useCallback((id: string) => {
-      setItems(prevItems => prevItems.filter(item => item.id !== id));
-    }, []);
+      try {
+        setItems(prevItems => {
+          const updatedItems = prevItems.filter(item => item.id !== id);
+          // Immediate save to localStorage
+          if (userStorageKey) {
+            localStorage.setItem(userStorageKey, JSON.stringify(updatedItems));
+          }
+          return updatedItems;
+        });
+        console.log(`[DataContext] Deleted item from ${storageKey}:`, id);
+      } catch (error) {
+        console.error(`[DataContext] Failed to delete item from ${storageKey}:`, error);
+        throw error;
+      }
+    }, [userStorageKey]);
 
     // Stable function references that depend on items state
     // These are separated from the core actions to prevent re-render cascades
@@ -143,7 +205,8 @@ export function createDataContext<T extends TrackableItem>(storageKey: string) {
       deleteItem,
       getItemById,
       getItemsByTag,
-      getItemsByDate
+      getItemsByDate,
+      deleteItemsByViewId
     }), [
       items,
       addItem,
@@ -151,7 +214,8 @@ export function createDataContext<T extends TrackableItem>(storageKey: string) {
       deleteItem,
       getItemById,
       getItemsByTag,
-      getItemsByDate
+      getItemsByDate,
+      deleteItemsByViewId
     ]);
 
     return (
@@ -169,5 +233,10 @@ export const SleepContext = createDataContext<import('../types').SleepEntry>('sl
 export const ScreenTimeContext = createDataContext<import('../types').ScreenTimeEntry>('screenTimeEntries');
 export const MedicationContext = createDataContext<import('../types').MedicationEntry>('medicationEntries');
 export const TodoContext = createDataContext<import('../types').TodoItem>('todoItems');
+// Export deleteItemsByViewId for use in view deletion
+export const useTodoDataWithDeleteByView = () => {
+  const ctx = TodoContext.useData();
+  return ctx;
+};
 export const CalendarContext = createDataContext<import('../types').CalendarEvent>('calendarEvents');
 export const BloodPressureContext = createDataContext<import('../types').BloodPressureEntry>('bloodPressureEntries');

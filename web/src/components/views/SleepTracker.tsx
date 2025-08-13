@@ -8,13 +8,22 @@ import { TagSelector, TagFilter, TagList } from '../common/TagComponents';
 
 interface SleepTrackerProps {
   globalFilterTags?: Tag[];
+  viewId: string;
 }
 
-const SleepTracker: React.FC<SleepTrackerProps> = ({ globalFilterTags = [] }) => {
+const SleepTracker: React.FC<SleepTrackerProps> = ({ globalFilterTags = [], viewId }) => {
   const { items: allSleepEntries, addItem, updateItem, deleteItem } = useSleepData();
   const [showAddForm, setShowAddForm] = useState(false);
+  const [entryType, setEntryType] = useState<'time' | 'duration'>('time');
+  
+  // Time-based entry state
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
+  
+  // Duration-based entry state
+  const [durationHours, setDurationHours] = useState('');
+  const [durationMinutes, setDurationMinutes] = useState('');
+  
   const [quality, setQuality] = useState<number | null>(3);
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [filterTags, setFilterTags] = useState<Tag[]>([]);
@@ -43,6 +52,9 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ globalFilterTags = [] }) =>
   const resetForm = () => {
     setStartTime('');
     setEndTime('');
+    setDurationHours('');
+    setDurationMinutes('');
+    setEntryType('time');
     setQuality(3);
     setSelectedTags([]);
     setEditMode(false);
@@ -50,18 +62,37 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ globalFilterTags = [] }) =>
     setShowAddForm(false);
   };
 
+
   const handleAddEntry = () => {
-    if (startTime && endTime && quality) {
+    if (quality && 
+      (entryType === 'time' ? (startTime && endTime) : 
+       (durationHours || durationMinutes))) {
+      
+      let entryData: Partial<SleepEntry> = {};
+      
+      if (entryType === 'time' && startTime && endTime) {
+        entryData = {
+          startTime,
+          endTime,
+        };
+      } else if (entryType === 'duration') {
+        entryData = {
+          duration: {
+            hours: parseInt(durationHours) || 0,
+            minutes: parseInt(durationMinutes) || 0
+          }
+        };
+      }
+      
       if (editMode && editingEntry) {
         // Update existing entry
         const updatedEntry = {
           ...editingEntry,
-          startTime,
-          endTime,
+          ...entryData,
           quality,
           tags: selectedTags,
-          // Update the date to trigger a re-render
-          date: new Date().toISOString()
+          date: new Date().toISOString(),
+          entryType
         };
         
         updateItem(updatedEntry);
@@ -70,11 +101,12 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ globalFilterTags = [] }) =>
       } else {
         // Create new entry
         const newEntry: Omit<SleepEntry, 'id'> = {
+          viewId,
           date: new Date().toISOString(),
-          startTime,
-          endTime,
+          ...entryData,
           quality,
           tags: selectedTags,
+          entryType
         };
         addItem(newEntry);
       }
@@ -84,11 +116,18 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ globalFilterTags = [] }) =>
   
   // Function to edit an existing entry
   const handleEditEntry = (entry: SleepEntry) => {
-    setStartTime(entry.startTime);
-    setEndTime(entry.endTime);
+    setEntryType(entry.entryType || 'time');
+    
+    if (entry.duration) {
+      setDurationHours(entry.duration.hours.toString());
+      setDurationMinutes(entry.duration.minutes.toString());
+    } else if (entry.startTime && entry.endTime) {
+      setStartTime(entry.startTime);
+      setEndTime(entry.endTime);
+    }
+    
     setQuality(entry.quality);
     setSelectedTags(entry.tags);
-    
     setEditMode(true);
     setEditingEntry(entry);
     setShowAddForm(true);
@@ -108,13 +147,18 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ globalFilterTags = [] }) =>
   };
 
   // Calculate sleep duration in hours
-  const calculateDuration = (start: string, end: string) => {
+  const calculateDuration = (entry: SleepEntry) => {
     try {
-      const startDate = new Date(start);
-      const endDate = new Date(end);
-      const durationMs = endDate.getTime() - startDate.getTime();
-      const durationHours = durationMs / (1000 * 60 * 60);
-      return durationHours.toFixed(1);
+      if (entry.duration) {
+        return (entry.duration.hours + entry.duration.minutes / 60).toFixed(1);
+      } else if (entry.startTime && entry.endTime) {
+        const startDate = new Date(entry.startTime);
+        const endDate = new Date(entry.endTime);
+        const durationMs = endDate.getTime() - startDate.getTime();
+        const durationHours = durationMs / (1000 * 60 * 60);
+        return durationHours.toFixed(1);
+      }
+      return 'N/A';
     } catch (error) {
       return 'N/A';
     }
@@ -161,26 +205,93 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ globalFilterTags = [] }) =>
               <Typography variant="subtitle1" gutterBottom>
                 {editMode ? 'Edit Sleep Entry' : 'Add Sleep Entry'}
               </Typography>
-              <TextField
-                label="Sleep Time"
-                type="datetime-local"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                fullWidth
-                margin="dense"
-                size="small"
-              />
-              <TextField
-                label="Wake Time"
-                type="datetime-local"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                InputLabelProps={{ shrink: true }}
-                fullWidth
-                margin="dense"
-                size="small"
-              />
+              
+              {/* Entry Type Toggle */}
+              <Box sx={{ mb: 2, display: 'flex', gap: 1 }}>
+                <Button
+                  variant={entryType === 'time' ? 'contained' : 'outlined'}
+                  onClick={() => setEntryType('time')}
+                  size="small"
+                >
+                  Time Range
+                </Button>
+                <Button
+                  variant={entryType === 'duration' ? 'contained' : 'outlined'}
+                  onClick={() => setEntryType('duration')}
+                  size="small"
+                >
+                  Duration
+                </Button>
+              </Box>
+
+              {entryType === 'time' ? (
+                // Time Range Input
+                <>
+                  <TextField
+                    label="Sleep Time"
+                    type="datetime-local"
+                    value={startTime}
+                    onChange={(e) => setStartTime(e.target.value)}
+                    InputLabelProps={{ shrink: true }}
+                    fullWidth
+                    margin="dense"
+                    size="small"
+                  />
+                  <TextField
+                    label="Wake Time"
+                    type="datetime-local"
+                    value={endTime}
+                    onChange={(e) => setEndTime(e.target.value)}
+                    InputLabelProps={{ shrink: true }}
+                    fullWidth
+                    margin="dense"
+                    size="small"
+                  />
+                </>
+              ) : (
+                // Duration Input
+                <Box sx={{ display: 'flex', gap: 2, mb: 1 }}>
+                  <TextField
+                    label="Hours"
+                    type="number"
+                    value={durationHours}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value);
+                      if (!isNaN(val) && val >= 0) {
+                        setDurationHours(val.toString());
+                      }
+                    }}
+                    InputProps={{ 
+                      inputProps: { min: 0, style: { textAlign: 'center' } }
+                    }}
+                    sx={{ flex: 1 }}
+                    size="small"
+                  />
+                  <TextField
+                    label="Minutes"
+                    type="number"
+                    value={durationMinutes}
+                    onChange={(e) => {
+                      const val = parseInt(e.target.value);
+                      if (!isNaN(val)) {
+                        if (val >= 60) {
+                          const additionalHours = Math.floor(val / 60);
+                          const remainingMinutes = val % 60;
+                          setDurationHours(prev => ((parseInt(prev) || 0) + additionalHours).toString());
+                          setDurationMinutes(remainingMinutes.toString());
+                        } else {
+                          setDurationMinutes(val.toString());
+                        }
+                      }
+                    }}
+                    InputProps={{ 
+                      inputProps: { min: 0, max: 59, style: { textAlign: 'center' } }
+                    }}
+                    sx={{ flex: 1 }}
+                    size="small"
+                  />
+                </Box>
+              )}
               <Box sx={{ mt: 1 }}>
                 <Typography component="legend" variant="body2">
                   Sleep Quality
@@ -212,7 +323,11 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ globalFilterTags = [] }) =>
                   variant="contained" 
                   onClick={handleAddEntry}
                   size="small"
-                  disabled={!startTime || !endTime || !quality}
+                  disabled={
+                    !quality || 
+                    (entryType === 'time' ? (!startTime || !endTime) : 
+                     (!durationHours && !durationMinutes))
+                  }
                 >
                   {editMode ? 'Update' : 'Save'}
                 </Button>
@@ -240,7 +355,7 @@ const SleepTracker: React.FC<SleepTrackerProps> = ({ globalFilterTags = [] }) =>
                         {formatDateTime(entry.date)}
                       </Typography>
                       <Typography variant="body1">
-                        {calculateDuration(entry.startTime, entry.endTime)} hours
+                        {calculateDuration(entry)} hours
                       </Typography>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
                         <Typography variant="body2" sx={{ mr: 1 }}>

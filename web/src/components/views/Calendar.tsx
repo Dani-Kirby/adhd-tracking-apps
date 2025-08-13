@@ -19,9 +19,11 @@ import { TagSelector, TagFilter, TagList } from '../common/TagComponents';
 
 interface CalendarProps {
   globalFilterTags?: Tag[];
+  viewTitle?: string;
+  viewId: string;
 }
 
-const Calendar: React.FC<CalendarProps> = ({ globalFilterTags = [] }) => {
+const Calendar: React.FC<CalendarProps> = ({ globalFilterTags = [], viewTitle, viewId }) => {
   const { items: allCalendarEvents, addItem, updateItem, deleteItem } = useCalendarData();
   const [selectedDate, setSelectedDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
   const [isEventDialogOpen, setIsEventDialogOpen] = useState(false);
@@ -73,6 +75,7 @@ const Calendar: React.FC<CalendarProps> = ({ globalFilterTags = [] }) => {
       } else {
         // Create new event
         const newEvent: Omit<CalendarEvent, 'id'> = {
+          viewId,
           date: selectedDate,
           title,
           startTime: allDay ? `${selectedDate}T00:00:00` : startTime,
@@ -185,7 +188,6 @@ const Calendar: React.FC<CalendarProps> = ({ globalFilterTags = [] }) => {
       <Paper sx={{ p: 2, mb: 2 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
           <Box>
-            <Typography variant="h6" gutterBottom>Calendar Events</Typography>
             <Box sx={{ mb: 2 }}>
               <TagFilter 
                 selectedTags={filterTags} 
@@ -193,7 +195,6 @@ const Calendar: React.FC<CalendarProps> = ({ globalFilterTags = [] }) => {
               />
             </Box>
           </Box>
-          
           <Button
             variant="outlined"
             color="primary"

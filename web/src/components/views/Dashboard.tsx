@@ -7,7 +7,6 @@ import {
   IconButton, 
   Menu, 
   MenuItem,
-  Fab,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -44,6 +43,10 @@ import { TagFilter } from '../common/TagComponents';
 
 const Dashboard: React.FC = () => {
   const { views, addView, updateView, deleteView, toggleViewVisibility } = useViews();
+  const renderCount = React.useRef(0);
+  
+  // Component state
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   const [activeViewId, setActiveViewId] = useState<string | null>(null);
   const [isAddViewDialogOpen, setIsAddViewDialogOpen] = useState(false);
@@ -53,6 +56,37 @@ const Dashboard: React.FC = () => {
   const [globalFilterTags, setGlobalFilterTags] = useState<Tag[]>([]);
   const [expandedViews, setExpandedViews] = useState<Set<string>>(new Set());
   const [scrollableViews, setScrollableViews] = useState<Set<string>>(new Set());
+  const [showHiddenViews, setShowHiddenViews] = useState(false);
+  
+  // Memoize views lists to prevent unnecessary re-renders
+  const visibleViews = React.useMemo(() => 
+    views.filter(v => v.visible).sort((a, b) => a.order - b.order),
+    [views]
+  );
+  
+  const hiddenViews = React.useMemo(() => 
+    views.filter(v => !v.visible).sort((a, b) => a.order - b.order),
+    [views]
+  );
+  
+  // Track renders and state changes
+  React.useEffect(() => {
+    renderCount.current += 1;
+    console.log(`[Dashboard] Render #${renderCount.current}`, {
+      reason: 'views or visible state changed',
+      views,
+      visibleViews,
+      hiddenViews,
+      expandedViews: Array.from(expandedViews),
+      scrollableViews: Array.from(scrollableViews)
+    });
+  }, [views, visibleViews, hiddenViews, expandedViews, scrollableViews]);
+  
+  // Debug: Clear all localStorage and reload
+  const handleClearAllData = () => {
+    localStorage.clear();
+    window.location.reload();
+  };
 
   // Handle menu open
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>, viewId: string) => {
@@ -63,7 +97,10 @@ const Dashboard: React.FC = () => {
   // Handle menu close
   const handleMenuClose = () => {
     setMenuAnchorEl(null);
-    setActiveViewId(null);
+    // Only clear activeViewId if we're not showing the delete dialog
+    if (!isDeleteConfirmOpen) {
+      setActiveViewId(null);
+    }
   };
 
   // Handle view visibility toggle
@@ -71,15 +108,44 @@ const Dashboard: React.FC = () => {
     if (activeViewId) {
       toggleViewVisibility(activeViewId);
     }
-    handleMenuClose();
+    setMenuAnchorEl(null);
   };
 
   // Handle view deletion
+  // Open the delete confirmation dialog
   const handleDeleteView = () => {
-    if (activeViewId) {
-      deleteView(activeViewId);
+    // Keep the activeViewId but close the menu
+    setIsDeleteConfirmOpen(true);
+    setMenuAnchorEl(null);
+  };
+
+  // Confirm deletion with proper cleanup
+  const handleConfirmDeleteView = () => {
+    // Capture the ID first since we're about to close dialogs
+    const viewToDelete = activeViewId;
+    
+    if (!viewToDelete) {
+      console.warn('[Dashboard] No active view ID for deletion');
+      return;
     }
-    handleMenuClose();
+    
+    console.log('[Dashboard] Deleting view:', viewToDelete);
+    
+    // Close UI elements first
+    setIsDeleteConfirmOpen(false);
+    setActiveViewId(null);
+    setMenuAnchorEl(null);
+    
+    // Use a small delay to ensure UI updates complete before deletion
+    requestAnimationFrame(() => {
+      deleteView(viewToDelete);
+    });
+  };
+
+  // Cancel deletion
+  const handleCancelDeleteView = () => {
+    setIsDeleteConfirmOpen(false);
+    setActiveViewId(null);
   };
 
   // Handle view edit
@@ -95,30 +161,49 @@ const Dashboard: React.FC = () => {
     handleMenuClose();
   };
 
-  // Handle add view dialog open
-  const handleAddViewDialogOpen = () => {
+  // Handle dialogs with proper focus management
+  const handleAddViewDialogOpen = React.useCallback(() => {
     setNewViewTitle('');
     setNewViewType('sleep');
     setIsAddViewDialogOpen(true);
-  };
+  }, []);
 
-  // Handle add view dialog close
-  const handleAddViewDialogClose = () => {
+  const handleAddViewDialogClose = React.useCallback(() => {
+    const activeElement = document.activeElement as HTMLElement;
     setIsAddViewDialogOpen(false);
-  };
+    // Wait for dialog to close before restoring focus
+    setTimeout(() => {
+      if (activeElement) {
+        activeElement.blur();
+      }
+    }, 0);
+  }, []);
 
-  // Handle edit view dialog close
-  const handleEditViewDialogClose = () => {
+  const handleEditViewDialogClose = React.useCallback(() => {
+    const activeElement = document.activeElement as HTMLElement;
     setIsEditViewDialogOpen(false);
-  };
+    // Wait for dialog to close before restoring focus
+    setTimeout(() => {
+      if (activeElement) {
+        activeElement.blur();
+      }
+    }, 0);
+  }, []);
 
-  // Handle add view
+  // Handle add view with proper cleanup
   const handleAddView = () => {
+    if (!newViewTitle.trim() || !newViewType) return;
+    
+    // Add the view first
     addView(newViewType, newViewTitle);
+    
+    // Then reset form and close dialog
+    setNewViewTitle('');
+    setNewViewType('sleep');
     setIsAddViewDialogOpen(false);
   };
 
-  // Handle edit view
+  // Handle edit view with proper cleanup
   const handleSaveEditView = () => {
     if (activeViewId) {
       const view = views.find(v => v.id === activeViewId);
@@ -130,7 +215,18 @@ const Dashboard: React.FC = () => {
         });
       }
     }
+    // Reset form state
+    setNewViewTitle('');
+    setNewViewType('sleep');
+    // Close dialog with proper focus management
+    const activeElement = document.activeElement as HTMLElement;
     setIsEditViewDialogOpen(false);
+    // Wait for dialog to close before restoring focus
+    setTimeout(() => {
+      if (activeElement) {
+        activeElement.blur();
+      }
+    }, 0);
   };
 
   // Handle view type change
@@ -151,67 +247,34 @@ const Dashboard: React.FC = () => {
     });
   };
 
-  // Check if a view is scrollable by comparing content height to container height
-  const checkScrollable = (viewId: string, containerEl: HTMLElement | null) => {
-    if (containerEl) {
-      // Check if content height > container height
-      if (containerEl.scrollHeight > containerEl.clientHeight) {
-        setScrollableViews(prev => {
-          const newSet = new Set(prev);
-          newSet.add(viewId);
-          return newSet;
-        });
-      } else {
-        setScrollableViews(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(viewId);
-          return newSet;
-        });
-      }
-    }
-  };
-
-  // Create a ref for each content container to check for scrollability
+  // Create a ref to store contentRefs
   const contentRefs = React.useRef<{[key: string]: HTMLElement | null}>({});
-  
-  // Properly typed ref callback
-  const setContentRef = (viewId: string) => (el: HTMLElement | null) => {
+
+  // Create a stable ref callback
+  const setContentRef = React.useCallback((viewId: string) => (el: HTMLElement | null) => {
     contentRefs.current[viewId] = el;
-  };
+  }, []);
   
   // Memoized view components to prevent unnecessary re-renders
-  const memoizedComponents = React.useMemo(() => {
-    // Create a stable object of component instances
-    return {
-      sleep: <SleepTracker globalFilterTags={globalFilterTags} />,
-      screenTime: <ScreenTimeTracker globalFilterTags={globalFilterTags} />,
-      medication: <MedicationTracker globalFilterTags={globalFilterTags} />,
-      todo: <TodoList globalFilterTags={globalFilterTags} />,
-      calendar: <Calendar globalFilterTags={globalFilterTags} />,
-      bloodPressure: <BloodPressureTracker globalFilterTags={globalFilterTags} />,
-    };
-  }, [globalFilterTags]); // Only recreate when globalFilterTags changes
-  
-  // Render the appropriate component based on view type
+  // Render the appropriate component based on view type, passing the user-specified title as a prop
   const renderViewComponent = React.useCallback((view: ViewConfig) => {
-    // Return the pre-memoized component instance
     switch (view.type) {
       case 'sleep':
-        return memoizedComponents.sleep;
+        return <SleepTracker globalFilterTags={globalFilterTags} viewId={view.id} />;
       case 'screenTime':
-        return memoizedComponents.screenTime;
+        return <ScreenTimeTracker globalFilterTags={globalFilterTags} viewId={view.id} />;
       case 'medication':
-        return memoizedComponents.medication;
+        return <MedicationTracker globalFilterTags={globalFilterTags} viewId={view.id} />;
       case 'todo':
-        return memoizedComponents.todo;
+        return <TodoList globalFilterTags={globalFilterTags} viewTitle={view.title} viewId={view.id} />;
       case 'calendar':
-        return memoizedComponents.calendar;
+        return <Calendar globalFilterTags={globalFilterTags} viewTitle={view.title} viewId={view.id} />;
       case 'bloodPressure':
-        return memoizedComponents.bloodPressure;
+        return <BloodPressureTracker globalFilterTags={globalFilterTags} viewId={view.id} />;
       default:
         return <Typography>Unknown view type</Typography>;
     }
-  }, [memoizedComponents]);
+  }, [globalFilterTags]);
 
   // State for drag and drop
   const [draggedView, setDraggedView] = useState<ViewConfig | null>(null);
@@ -274,27 +337,55 @@ const Dashboard: React.FC = () => {
     setDragOverViewId(null);
   };
 
-  // Get visible views sorted by order
-  const visibleViews = views
-    .filter(view => view.visible)
-    .sort((a, b) => a.order - b.order);
-
   // Separate effects to avoid unnecessary re-runs
   
-  // Effect for checking scrollable status - only runs when views change
-  useEffect(() => {
-    // Small delay to ensure content has rendered
-    const timer = setTimeout(() => {
-      visibleViews.forEach(view => {
-        checkScrollable(view.id, contentRefs.current[view.id]);
-      });
-    }, 100);
+  // Memoized scrollable check to prevent unnecessary updates
+  const debouncedCheckScrollable = React.useCallback(() => {
+    console.log('[Dashboard] Checking scrollable status for views');
+    const updates = new Set<string>();
     
+    visibleViews.forEach(view => {
+      const containerEl = contentRefs.current[view.id];
+      if (containerEl) {
+        const isScrollable = containerEl.scrollHeight > containerEl.clientHeight;
+        if (isScrollable) {
+          updates.add(view.id);
+        }
+      }
+    });
+
+    // Only update state if the scrollable views have actually changed
+    setScrollableViews(prev => {
+      const prevArray = Array.from(prev);
+      const updatesArray = Array.from(updates);
+      
+      if (prevArray.length !== updatesArray.length || 
+          !prevArray.every(id => updates.has(id))) {
+        console.log('[Dashboard] Updating scrollable views:', updatesArray);
+        return updates;
+      }
+      return prev;
+    });
+  }, [visibleViews]);
+
+  // Only check scrollable status when views are added/removed or expanded/collapsed
+  useEffect(() => {
+    // Skip the initial mount
+    if (renderCount.current === 0) {
+      renderCount.current = 1;
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      console.log('[Dashboard] Running delayed scrollable check');
+      debouncedCheckScrollable();
+    }, 100);
+
     return () => clearTimeout(timer);
-  }, [visibleViews, expandedViews]); // Removed globalFilterTags dependency
+  }, [visibleViews, expandedViews, debouncedCheckScrollable]);
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+    <Container maxWidth="xl" sx={{ mt: 4, mb: 4, px: { xs: 2, sm: 3, md: 4 } }}>
       <Box sx={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
@@ -305,29 +396,57 @@ const Dashboard: React.FC = () => {
         <Typography variant="h4" component="h1">
           ADHD Tracker Dashboard
         </Typography>
-        <Fab 
-          color="primary" 
-          aria-label="add" 
-          onClick={handleAddViewDialogOpen}
-          sx={{
-            zIndex: 10,
-            position: 'relative',
-            marginLeft: 2,
-            '@media (max-width: 600px)': {
-              marginLeft: 1,
-              transform: 'scale(0.9)'
-            }
-          }}
-        >
-          <AddIcon />
-        </Fab>
       </Box>
 
-      {/* Global Tag Filter */}
-      <Box sx={{ mb: 3, p: 2, bgcolor: 'background.paper', borderRadius: 1 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-          <FilterListIcon sx={{ mr: 1 }} />
-          <Typography variant="h6">Global Filter</Typography>
+      {/* Global Tag Filter with Add View Fab */}
+      <Box 
+        sx={{ 
+          mb: 4, 
+          p: 3, 
+          bgcolor: 'background.paper', 
+          borderRadius: 2,
+          boxShadow: 1
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+          <Box sx={{ display: 'flex', alignItems: 'center', flex: 1 }}>
+            <FilterListIcon sx={{ mr: 1.5, color: 'primary.main' }} />
+            <Typography 
+              variant="h6" 
+              sx={{ 
+                mr: 3, 
+                minWidth: 110,
+                fontWeight: 500,
+                color: 'text.primary'
+              }}
+            >
+              Global Filter
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            color="primary"
+            startIcon={<AddIcon />}
+            aria-label="Add new dashboard view"
+            onClick={handleAddViewDialogOpen}
+            sx={{
+              px: 3,
+              py: 1,
+              fontWeight: 500,
+              textTransform: 'none',
+              fontSize: { xs: '0.9rem', sm: '1rem' },
+              borderRadius: 2,
+              whiteSpace: 'nowrap',
+              minHeight: 40,
+              ml: { xs: 1, sm: 2 },
+              boxShadow: 'none',
+              '&:hover': {
+                boxShadow: 1
+              }
+            }}
+          >
+            Add View
+          </Button>
         </Box>
         <TagFilter 
           selectedTags={globalFilterTags} 
@@ -340,7 +459,74 @@ const Dashboard: React.FC = () => {
         )}
       </Box>
 
-      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: { xs: 2, sm: 3 }, mb: 4 }}>
+      {/* Hidden Views Toggle */}
+      <Box sx={{ mb: 3 }}>
+        <Button
+          onClick={() => setShowHiddenViews(!showHiddenViews)}
+          startIcon={showHiddenViews ? <VisibilityOffIcon /> : <VisibilityIcon />}
+          variant="text"
+          color="inherit"
+          sx={{ mb: 2 }}
+        >
+          {showHiddenViews ? "Hide Hidden Views" : "Show Hidden Views"}
+          {hiddenViews.length > 0 && ` (${hiddenViews.length})`}
+        </Button>
+      </Box>
+
+      {/* Hidden Views Section */}
+      {showHiddenViews && hiddenViews.length > 0 && (
+        <Box sx={{ 
+          mb: 4,
+          p: 2,
+          bgcolor: 'background.paper',
+          borderRadius: 1,
+          border: '1px dashed',
+          borderColor: 'divider'
+        }}>
+          <Typography variant="h6" sx={{ mb: 2 }}>Hidden Views</Typography>
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+            {hiddenViews.map((view) => (
+              <Paper
+                key={view.id}
+                sx={{
+                  p: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  width: { xs: '100%', sm: 'auto', minWidth: 250 },
+                  opacity: 0.8,
+                  '&:hover': {
+                    opacity: 1
+                  }
+                }}
+              >
+                <Typography variant="body1" sx={{ mr: 2 }}>{view.title}</Typography>
+                <Button
+                  startIcon={<VisibilityIcon />}
+                  size="small"
+                  onClick={() => toggleViewVisibility(view.id)}
+                >
+                  Show
+                </Button>
+              </Paper>
+            ))}
+          </Box>
+        </Box>
+      )}
+
+      {/* Main Views Grid */}
+      <Box 
+        sx={{ 
+          display: 'grid',
+          gridTemplateColumns: {
+            xs: '1fr',
+            lg: 'repeat(2, 1fr)',
+            xl: 'repeat(3, 1fr)'
+          },
+          gap: { xs: 2, sm: 3, md: 4 },
+          mb: 4
+        }}
+      >
         {visibleViews.map((view) => (
           <Box 
             key={view.id} 
@@ -350,11 +536,7 @@ const Dashboard: React.FC = () => {
             onDragEnd={handleDragEnd}
             onDrop={(e) => handleDrop(e, view.id)}
             sx={{ 
-              width: { 
-                xs: '100%', 
-                md: 'calc(50% - 16px)', 
-                lg: 'calc(33.33% - 16px)' 
-              },
+              width: '100%',
               cursor: 'move',
               opacity: draggedView?.id === view.id ? 0.5 : 1,
               transform: dragOverViewId === view.id ? 'scale(1.02)' : 'none',
@@ -363,19 +545,24 @@ const Dashboard: React.FC = () => {
             }}
           >
             <Paper
-              elevation={2}
+              elevation={1}
               sx={{
-                p: { xs: 2, sm: 3 },
+                p: { xs: 3, sm: 4 },
                 display: 'flex',
                 flexDirection: 'column',
                 height: '100%',
                 position: 'relative',
                 transition: 'all 0.3s ease',
                 overflow: 'hidden',
+                borderRadius: 2,
+                bgcolor: 'background.paper',
                 '&:hover': {
                   transform: 'translateY(-2px)',
-                  boxShadow: (theme) => theme.shadows[4],
+                  boxShadow: (theme) => theme.shadows[3],
                 },
+                '& > *:not(:last-child)': {
+                  mb: 3
+                }
               }}
             >
               <Box 
@@ -383,15 +570,27 @@ const Dashboard: React.FC = () => {
                   display: 'flex', 
                   justifyContent: 'space-between', 
                   alignItems: 'center', 
-                  mb: 2,
+                  mb: 3,
+                  pb: 2,
                   position: 'relative',
-                  zIndex: 2
+                  zIndex: 2,
+                  borderBottom: '1px solid',
+                  borderColor: 'divider'
                 }}
               >
-                <Typography variant="h6" component="h2">
-                  {view.title}
-                </Typography>
-                <Box sx={{ display: 'flex' }}>
+                <Box>
+                  <Typography 
+                    variant="h6" 
+                    component="h2"
+                    sx={{ 
+                      fontWeight: 500,
+                      color: 'text.primary'
+                    }}
+                  >
+                    {view.title}
+                  </Typography>
+                </Box>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
                   {/* Only show expand button if content is scrollable */}
                   {scrollableViews.has(view.id) && (
                     <Tooltip title={expandedViews.has(view.id) ? "Collapse" : "Expand"}>
@@ -402,7 +601,8 @@ const Dashboard: React.FC = () => {
                         sx={{
                           transform: expandedViews.has(view.id) ? 'rotate(180deg)' : 'rotate(0deg)',
                           transition: 'transform 0.3s ease',
-                          mr: 0.5
+                          mr: 0.5,
+                          color: 'text.secondary'
                         }}
                       >
                         <ExpandMoreIcon />
@@ -413,6 +613,7 @@ const Dashboard: React.FC = () => {
                     aria-label="more" 
                     onClick={(e) => handleMenuOpen(e, view.id)}
                     size="small"
+                    sx={{ color: 'text.secondary' }}
                   >
                     <MoreVertIcon />
                   </IconButton>
@@ -466,6 +667,43 @@ const Dashboard: React.FC = () => {
           Delete
         </MenuItem>
       </Menu>
+
+      {/* Debug: Clear all data button (visible only in development) */}
+      {process.env.NODE_ENV !== 'production' && (
+        <Box sx={{ position: 'fixed', bottom: 16, right: 16, zIndex: 2000 }}>
+          <Button variant="contained" color="warning" onClick={handleClearAllData}>
+            Clear All Data (Debug)
+          </Button>
+        </Box>
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog 
+        open={isDeleteConfirmOpen} 
+        onClose={handleCancelDeleteView}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+        disableEscapeKeyDown
+      >
+        <DialogTitle id="delete-dialog-title">Delete View</DialogTitle>
+        <DialogContent>
+          <Typography id="delete-dialog-description">
+            Are you sure you want to delete this view? This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelDeleteView} autoFocus>
+            Cancel
+          </Button>
+          <Button 
+            onClick={handleConfirmDeleteView} 
+            color="error" 
+            variant="contained"
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Add View Dialog */}
       <Dialog open={isAddViewDialogOpen} onClose={handleAddViewDialogClose}>

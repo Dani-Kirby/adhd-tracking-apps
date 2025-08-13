@@ -13,12 +13,13 @@ const mockUpdateItem = jest.fn();
 jest.mock('../../contexts/AppProvider', () => ({
   useSleepData: () => ({
     items: [],
-    addItem: mockAddItem,
-    deleteItem: mockDeleteItem,
-    updateItem: mockUpdateItem,
-    getItemById: jest.fn(),
-    getItemsByTag: jest.fn(),
-    getItemsByDate: jest.fn()
+  addItem: mockAddItem,
+  deleteItem: mockDeleteItem,
+  updateItem: mockUpdateItem,
+  getItemById: jest.fn(),
+  getItemsByTag: jest.fn(),
+  getItemsByDate: jest.fn(),
+  deleteItemsByViewId: jest.fn()
   }),
   useTags: () => ({
     tags: [],
@@ -36,11 +37,13 @@ const createTestSleepEntry = (overrides?: Partial<SleepEntry>): SleepEntry => {
   
   return {
     id: '1',
+    viewId: overrides?.viewId ?? 'test-view-id',
     date: now.toISOString(),
     startTime: yesterday.toISOString(),
     endTime: now.toISOString(),
     quality: 4,
     tags: [],
+    entryType: 'time',
     ...overrides
   };
 };
@@ -58,9 +61,7 @@ describe('SleepTracker', () => {
   });
 
   it('renders all form fields when add button is clicked', async () => {
-    render(<SleepTracker />);
-    
-    // Initially, the form is not shown
+  render(<SleepTracker viewId="test-view-id" />);
     expect(screen.getByText(/Add Sleep Entry/)).toBeInTheDocument();
     
     // Click the "Add Sleep Entry" button
@@ -74,9 +75,7 @@ describe('SleepTracker', () => {
   });
 
   it('validates form inputs before submission', async () => {
-    render(<SleepTracker />);
-    
-    // Open the form
+  render(<SleepTracker viewId="test-view-id" />);
     const addButton = screen.getByRole('button', { name: /add sleep entry/i });
     fireEvent.click(addButton);
     
@@ -98,9 +97,7 @@ describe('SleepTracker', () => {
   });
 
   it('successfully submits a new sleep entry', async () => {
-    render(<SleepTracker />);
-    
-    // Open the form
+  render(<SleepTracker viewId="test-view-id" />);
     const addButton = screen.getByRole('button', { name: /add sleep entry/i });
     fireEvent.click(addButton);
     
@@ -123,7 +120,8 @@ describe('SleepTracker', () => {
         startTime: '2023-01-01T22:00',
         endTime: '2023-01-02T06:00',
         quality: 3,
-        tags: []
+        tags: [],
+        entryType: 'time'
       }));
     });
   });
@@ -134,17 +132,16 @@ describe('SleepTracker', () => {
     // Mock items for this test
     jest.spyOn(SleepContext, 'useData').mockImplementation(() => ({
       items: [testEntry],
-      addItem: mockAddItem,
-      deleteItem: mockDeleteItem,
-      updateItem: mockUpdateItem,
-      getItemById: jest.fn(),
-      getItemsByTag: jest.fn(),
-      getItemsByDate: jest.fn()
+  addItem: mockAddItem,
+  deleteItem: mockDeleteItem,
+  updateItem: mockUpdateItem,
+  getItemById: jest.fn(),
+  getItemsByTag: jest.fn(),
+  getItemsByDate: jest.fn(),
+  deleteItemsByViewId: jest.fn()
     }));
     
-    render(<SleepTracker />);
-    
-    // Find and click the edit button
+  render(<SleepTracker viewId="test-view-id" />);
     const editButton = screen.getByTitle(/edit sleep entry/i);
     fireEvent.click(editButton);
     
@@ -163,7 +160,8 @@ describe('SleepTracker', () => {
     await waitFor(() => {
       expect(mockUpdateItem).toHaveBeenCalledWith(expect.objectContaining({
         id: testEntry.id,
-        endTime: '2023-01-02T07:00'
+        endTime: '2023-01-02T07:00',
+        entryType: 'time'
       }));
     });
   });
@@ -174,17 +172,16 @@ describe('SleepTracker', () => {
     // Mock items for this test
     jest.spyOn(SleepContext, 'useData').mockImplementation(() => ({
       items: [testEntry],
-      addItem: mockAddItem,
-      deleteItem: mockDeleteItem,
-      updateItem: mockUpdateItem,
-      getItemById: jest.fn(),
-      getItemsByTag: jest.fn(),
-      getItemsByDate: jest.fn()
+  addItem: mockAddItem,
+  deleteItem: mockDeleteItem,
+  updateItem: mockUpdateItem,
+  getItemById: jest.fn(),
+  getItemsByTag: jest.fn(),
+  getItemsByDate: jest.fn(),
+  deleteItemsByViewId: jest.fn()
     }));
     
-    render(<SleepTracker />);
-    
-    // Find and click the delete button
+  render(<SleepTracker viewId="test-view-id" />);
     const deleteButton = screen.getByTitle(/delete sleep entry/i);
     fireEvent.click(deleteButton);
     
@@ -204,18 +201,17 @@ describe('SleepTracker', () => {
     
     // Mock items for this test
     jest.spyOn(SleepContext, 'useData').mockImplementation(() => ({
-      items: [testEntry],
-      addItem: mockAddItem,
-      deleteItem: mockDeleteItem,
-      updateItem: mockUpdateItem,
-      getItemById: jest.fn(),
-      getItemsByTag: jest.fn(),
-      getItemsByDate: jest.fn()
+  items: [testEntry],
+  addItem: mockAddItem,
+  deleteItem: mockDeleteItem,
+  updateItem: mockUpdateItem,
+  getItemById: jest.fn(),
+  getItemsByTag: jest.fn(),
+  getItemsByDate: jest.fn(),
+  deleteItemsByViewId: jest.fn()
     }));
     
-    render(<SleepTracker />);
-    
-    // Check that duration is displayed correctly (8 hours)
+  render(<SleepTracker viewId="test-view-id" />);
     expect(screen.getByText(/8.0 hours/i)).toBeInTheDocument();
   });
 
@@ -236,24 +232,24 @@ describe('SleepTracker', () => {
     
     // Mock items and tags for this test
     jest.spyOn(SleepContext, 'useData').mockImplementation(() => ({
-      items: [entry1, entry2],
-      addItem: mockAddItem,
-      deleteItem: mockDeleteItem,
-      updateItem: mockUpdateItem,
-      getItemById: jest.fn(),
-      getItemsByTag: jest.fn(),
-      getItemsByDate: jest.fn()
+  items: [entry1, entry2],
+  addItem: mockAddItem,
+  deleteItem: mockDeleteItem,
+  updateItem: mockUpdateItem,
+  getItemById: jest.fn(),
+  getItemsByTag: jest.fn(),
+  getItemsByDate: jest.fn(),
+  deleteItemsByViewId: jest.fn()
     }));
     
     // Mock the TagFilter component behavior
-    const { rerender } = render(<SleepTracker globalFilterTags={[tag1]} />);
-    
+  const { rerender } = render(<SleepTracker viewId="test-view-id" globalFilterTags={[tag1]} />);
     // Only entry1 should be visible with the global filter
     expect(screen.getByText(/4\/5/i)).toBeInTheDocument();
     expect(screen.queryByText(/2\/5/i)).not.toBeInTheDocument();
     
     // Change the filter
-    rerender(<SleepTracker globalFilterTags={[tag2]} />);
+  rerender(<SleepTracker viewId="test-view-id" globalFilterTags={[tag2]} />);
     
     // Now only entry2 should be visible
     expect(screen.queryByText(/4\/5/i)).not.toBeInTheDocument();
@@ -267,17 +263,17 @@ describe('SleepTracker', () => {
     
     // Mock items for this test
     jest.spyOn(SleepContext, 'useData').mockImplementation(() => ({
-      items: [testEntry],
-      addItem: mockAddItem,
-      deleteItem: mockDeleteItem,
-      updateItem: mockUpdateItem,
-      getItemById: jest.fn(),
-      getItemsByTag: jest.fn(),
-      getItemsByDate: jest.fn()
+  items: [testEntry],
+  addItem: mockAddItem,
+  deleteItem: mockDeleteItem,
+  updateItem: mockUpdateItem,
+  getItemById: jest.fn(),
+  getItemsByTag: jest.fn(),
+  getItemsByDate: jest.fn(),
+  deleteItemsByViewId: jest.fn()
     }));
     
-    render(<SleepTracker />);
-    
+  render(<SleepTracker viewId="test-view-id" />);
     // Check for the quality text
     expect(screen.getByText(/quality/i)).toBeInTheDocument();
     
@@ -292,17 +288,17 @@ describe('SleepTracker', () => {
   it('shows empty state when no entries', async () => {
     // Mock empty items array
     jest.spyOn(SleepContext, 'useData').mockImplementation(() => ({
-      items: [],
-      addItem: mockAddItem,
-      deleteItem: mockDeleteItem,
-      updateItem: mockUpdateItem,
-      getItemById: jest.fn(),
-      getItemsByTag: jest.fn(),
-      getItemsByDate: jest.fn()
+  items: [],
+  addItem: mockAddItem,
+  deleteItem: mockDeleteItem,
+  updateItem: mockUpdateItem,
+  getItemById: jest.fn(),
+  getItemsByTag: jest.fn(),
+  getItemsByDate: jest.fn(),
+  deleteItemsByViewId: jest.fn()
     }));
     
-    render(<SleepTracker />);
-    
+  render(<SleepTracker viewId="test-view-id" />);
     // Check for empty state message
     expect(screen.getByText(/no sleep data recorded yet/i)).toBeInTheDocument();
   });

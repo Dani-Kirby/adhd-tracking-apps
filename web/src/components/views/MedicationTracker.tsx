@@ -49,9 +49,10 @@ import { TagSelector, TagFilter, TagList } from '../common/TagComponents';
 
 interface MedicationTrackerProps {
   globalFilterTags?: Tag[];
+  viewId: string;
 }
 
-const MedicationTracker: React.FC<MedicationTrackerProps> = ({ globalFilterTags = [] }) => {
+const MedicationTracker: React.FC<MedicationTrackerProps> = ({ globalFilterTags = [], viewId }) => {
   const { items: allMedicationEntries, addItem, updateItem, deleteItem } = useMedicationData();
   const [showAddForm, setShowAddForm] = useState(false);
   const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
@@ -95,6 +96,9 @@ const MedicationTracker: React.FC<MedicationTrackerProps> = ({ globalFilterTags 
   // Edit mode state
   const [editMode, setEditMode] = useState(false);
   const [editingEntry, setEditingEntry] = useState<MedicationEntry | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [entryToDelete, setEntryToDelete] = useState<string | null>(null);
+  const [doseToDelete, setDoseToDelete] = useState<{ entryId: string, index: number, isAsNeeded: boolean } | null>(null);
   
   const resetForm = () => {
     setMedication('');
@@ -180,6 +184,7 @@ const MedicationTracker: React.FC<MedicationTrackerProps> = ({ globalFilterTags 
       } else {
         // Create new entry
         const newEntry: Omit<MedicationEntry, 'id'> = {
+          viewId,
           date: new Date().toISOString(),
           medication,
           dosage,
@@ -480,12 +485,54 @@ const MedicationTracker: React.FC<MedicationTrackerProps> = ({ globalFilterTags 
     setShowAddForm(true);
   };
   
-  // Function to delete an entry
+  // Function to initiate entry deletion
   const handleDeleteEntry = (entryId: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
+    setEntryToDelete(entryId);
+    setDeleteConfirmOpen(true);
+  };
+
+  // Function to confirm entry deletion
+  const handleConfirmDeleteEntry = () => {
+    if (entryToDelete) {
+      deleteItem(entryToDelete);
+      setEntryToDelete(null);
+    }
+    setDeleteConfirmOpen(false);
+  };
+
+  // Function to cancel entry deletion
+  const handleCancelDelete = () => {
+    setEntryToDelete(null);
+    setDoseToDelete(null);
+    setDeleteConfirmOpen(false);
+  };
+
+  // Function to delete individual dose
+  const handleDeleteDose = (entryId: string, index: number, isAsNeeded: boolean, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setDoseToDelete({ entryId, index, isAsNeeded });
+    setDeleteConfirmOpen(true);
+  };
+
+  // Function to confirm dose deletion
+  const handleConfirmDeleteDose = () => {
+    if (!doseToDelete) return;
+
+    const entry = medicationEntries.find(e => e.id === doseToDelete.entryId);
+    if (!entry) return;
+
+    const updatedEntry = { ...entry };
     
-    // Use the context's deleteItem function
-    deleteItem(entryId);
+    if (doseToDelete.isAsNeeded) {
+      updatedEntry.asNeededDoses = entry.asNeededDoses.filter((_, idx) => idx !== doseToDelete.index);
+    } else {
+      updatedEntry.scheduledDoses = entry.scheduledDoses.filter((_, idx) => idx !== doseToDelete.index);
+    }
+
+    updateItem(updatedEntry);
+    setDoseToDelete(null);
+    setDeleteConfirmOpen(false);
   };
 
   const isAllScheduledTaken = (entry: MedicationEntry): boolean => {
@@ -558,6 +605,37 @@ const MedicationTracker: React.FC<MedicationTrackerProps> = ({ globalFilterTags 
   
   return (
     <Box>
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={handleCancelDelete}
+        aria-labelledby="delete-dialog-title"
+        aria-describedby="delete-dialog-description"
+      >
+        <DialogTitle id="delete-dialog-title">
+          {entryToDelete ? "Delete Medication" : "Delete Dose"}
+        </DialogTitle>
+        <DialogContent>
+          <Typography id="delete-dialog-description">
+            {entryToDelete
+              ? "Are you sure you want to delete this medication? This action cannot be undone."
+              : "Are you sure you want to delete this dose? This action cannot be undone."}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelDelete} autoFocus>
+            Cancel
+          </Button>
+          <Button
+            onClick={entryToDelete ? handleConfirmDeleteEntry : handleConfirmDeleteDose}
+            color="error"
+            variant="contained"
+          >
+            Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
       {medicationEntries.length === 0 && !showAddForm ? (
         <Box sx={{ textAlign: 'center', py: 2 }}>
           <Typography variant="body1" gutterBottom>
@@ -708,9 +786,10 @@ const MedicationTracker: React.FC<MedicationTrackerProps> = ({ globalFilterTags 
                                 size="small"
                                 value={recurrenceInterval}
                                 onChange={(e) => setRecurrenceInterval(parseInt(e.target.value) || 1)}
-                                sx={{ ml: 2, width: 80 }}
+                                sx={{ ml: 2, width: 100 }}
+                                InputLabelProps={{ shrink: true }}
                                 InputProps={{ 
-                                  inputProps: { min: 1 },
+                                  inputProps: { min: 1, style: { textAlign: 'center' } },
                                   endAdornment: <Typography variant="body2" sx={{ ml: 1 }}>day(s)</Typography>
                                 }}
                               />
@@ -731,9 +810,10 @@ const MedicationTracker: React.FC<MedicationTrackerProps> = ({ globalFilterTags 
                                 size="small"
                                 value={recurrenceInterval}
                                 onChange={(e) => setRecurrenceInterval(parseInt(e.target.value) || 1)}
-                                sx={{ ml: 2, width: 80 }}
+                                sx={{ ml: 2, width: 100 }}
+                                InputLabelProps={{ shrink: true }}
                                 InputProps={{ 
-                                  inputProps: { min: 1 },
+                                  inputProps: { min: 1, style: { textAlign: 'center' } },
                                   endAdornment: <Typography variant="body2" sx={{ ml: 1 }}>week(s)</Typography>
                                 }}
                               />
@@ -830,22 +910,98 @@ const MedicationTracker: React.FC<MedicationTrackerProps> = ({ globalFilterTags 
                     <Box sx={{ 
                       display: 'flex', 
                       justifyContent: 'space-between',
-                      alignItems: 'center',
+                      alignItems: 'flex-start',
                     }}>
                       <Box>
-                        <Typography variant="body2" color="text.secondary">
-                          {formatDateTime(entry.date)}
-                        </Typography>
-                        <Typography variant="h6" sx={{ mt: 0 }}>
-                          {entry.medication} - {entry.dosage}
-                        </Typography>
-                        
-                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 1 }}>
+                        <Box sx={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'space-between',
+                          gap: 1, 
+                          mb: 0.5 
+                        }}>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                              {entry.medication}
+                            </Typography>
+                            <Typography variant="subtitle1" color="text.secondary">
+                              {entry.dosage}
+                            </Typography>
+                          </Box>
+                          
+                          <Box sx={{ 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: 0.5,
+                            opacity: expandedEntries[entry.id] ? 1 : 0,
+                            transition: 'opacity 0.2s',
+                            '.MuiPaper-root:hover &': {
+                              opacity: 1
+                            }
+                          }}>
+                            {entry.isAsNeeded && (
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                startIcon={<AddCircleOutline />}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleAddAsNeededDose(entry, e);
+                                }}
+                              >
+                                Take Dose
+                              </Button>
+                            )}
+                            <IconButton
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditEntry(entry, e);
+                              }}
+                              size="small"
+                              sx={{ 
+                                color: 'text.secondary',
+                                '&:hover': { color: 'primary.main' }
+                              }}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteEntry(entry.id, e);
+                              }}
+                              size="small"
+                              sx={{ 
+                                color: 'text.secondary',
+                                '&:hover': { color: 'error.main' }
+                              }}
+                            >
+                              <DeleteIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                              onClick={(e) => toggleExpanded(entry.id, e)}
+                              sx={{
+                                transform: expandedEntries[entry.id] ? 'rotate(180deg)' : 'rotate(0deg)',
+                                transition: 'transform 0.3s',
+                                color: 'text.secondary'
+                              }}
+                              size="small"
+                            >
+                              <ExpandMoreIcon />
+                            </IconButton>
+                          </Box>
+                        </Box>
+
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1.5 }}>
                           <Chip 
                             icon={entry.isAsNeeded ? <MedicationOutlined /> : <ScheduleOutlined />}
                             label={entry.isAsNeeded ? "As Needed" : getScheduledProgress(entry)}
                             color={entry.isAsNeeded ? "info" : (isAllScheduledTaken(entry) ? "success" : "primary")}
                             size="small"
+                            sx={{ 
+                              height: '24px',
+                              '& .MuiChip-icon': { fontSize: '1rem' }
+                            }}
                           />
                           
                           {entry.recurrencePattern && (
@@ -860,40 +1016,19 @@ const MedicationTracker: React.FC<MedicationTrackerProps> = ({ globalFilterTags 
                               }
                               color="secondary"
                               size="small"
+                              sx={{ 
+                                height: '24px',
+                                '& .MuiChip-icon': { fontSize: '1rem' }
+                              }}
                             />
                           )}
-                          
-                          {entry.tags.length > 0 && (
-                            <TagList tags={entry.tags} small />
-                          )}
                         </Box>
-                      </Box>
-                      
-                      <Box sx={{ display: 'flex', alignItems: 'center', ml: 1 }}>
-                        {entry.isAsNeeded && (
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            startIcon={<AddCircleOutline />}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleAddAsNeededDose(entry, e);
-                            }}
-                            sx={{ mr: 1 }}
-                          >
-                            Take Dose
-                          </Button>
+
+                        {entry.tags.length > 0 && (
+                          <Box sx={{ mb: 1 }}>
+                            <TagList tags={entry.tags} small />
+                          </Box>
                         )}
-                        <IconButton
-                          onClick={(e) => toggleExpanded(entry.id, e)}
-                          sx={{
-                            transform: expandedEntries[entry.id] ? 'rotate(180deg)' : 'rotate(0deg)',
-                            transition: 'transform 0.3s',
-                          }}
-                          size="small"
-                        >
-                          <ExpandMoreIcon />
-                        </IconButton>
                       </Box>
                     </Box>
                   </Box>
@@ -902,46 +1037,33 @@ const MedicationTracker: React.FC<MedicationTrackerProps> = ({ globalFilterTags 
                     <Box sx={{ p: 2, pt: 0 }}>
                       <Divider sx={{ my: 1 }} />
                       
-                      <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-                        <IconButton 
-                          size="small" 
-                          color="primary" 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleEditEntry(entry, e);
-                          }}
-                          title="Edit medication"
-                        >
-                          <EditIcon />
-                        </IconButton>
-                        <IconButton 
-                          size="small" 
-                          color="error" 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteEntry(entry.id, e);
-                          }}
-                          title="Delete medication"
-                        >
-                          <DeleteIcon />
-                        </IconButton>
-                      </Box>
-                      
+
                       {/* Scheduled doses section */}
                       {!entry.isAsNeeded && entry.scheduledDoses.length > 0 && (
                         <Box>
-                      <Typography variant="subtitle2" gutterBottom>
+                      <Typography 
+                        variant="subtitle2" 
+                        sx={{ 
+                          mb: 2,
+                          color: 'text.secondary',
+                          fontWeight: 500,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1
+                        }}
+                      >
+                        <ScheduleOutlined fontSize="small" />
                         Scheduled Doses
                       </Typography>
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                         {entry.scheduledDoses.map((dose, index) => (
-                          <Box key={index} sx={{ width: { xs: 'calc(50% - 4px)', sm: 'calc(33.333% - 4px)' } }}>
+                          <Box key={index} sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)', md: 'calc(33.333% - 8px)' } }}>
                               <Box 
                                 sx={{ 
                                   display: 'flex', 
                                   alignItems: 'center',
                                   justifyContent: 'space-between', 
-                                  p: 1,
+                                  p: 1.5,
                                   border: '1px solid',
                                   borderColor: dose.taken ? 'success.main' : 'divider',
                                   borderRadius: 1,
@@ -951,29 +1073,49 @@ const MedicationTracker: React.FC<MedicationTrackerProps> = ({ globalFilterTags 
                                   '&:hover': {
                                     backgroundColor: dose.taken ? 'success.100' : 'action.hover',
                                     borderColor: dose.taken ? 'success.dark' : 'primary.main',
+                                    transform: 'translateY(-1px)',
                                   }
                                 }}
                                 onClick={(e) => handleToggleScheduledDose(entry, index, e)}
                               >
                               <Box>
-                                <Typography variant="body2" fontWeight="medium">
+                                <Typography variant="subtitle2" sx={{ fontWeight: 500 }}>
                                   {formatTime(dose.scheduledTime)}
                                 </Typography>
                                 {dose.taken && dose.takenTime && (
-                                  <Typography variant="caption" color="text.secondary" display="block">
-                                    Taken: {formatTime(dose.takenTime)}
+                                  <Typography 
+                                    variant="caption" 
+                                    sx={{ 
+                                      color: 'success.dark',
+                                      display: 'block',
+                                      mt: 0.5,
+                                      fontWeight: 500
+                                    }}
+                                  >
+                                    ✓ Taken at {formatTime(dose.takenTime)}
                                   </Typography>
                                 )}
                               </Box>
-                              <Tooltip title={dose.taken ? "Mark as not taken" : "Mark as taken"}>
-                                <IconButton 
-                                  onClick={(e) => handleToggleScheduledDose(entry, index, e)}
-                                  color={dose.taken ? "success" : "default"}
+                              <Box sx={{ 
+                                display: 'flex', 
+                                alignItems: 'center',
+                                opacity: 0.7,
+                                transition: 'opacity 0.2s',
+                                '&:hover': {
+                                  opacity: 1
+                                }
+                              }}>
+                                <IconButton
+                                  onClick={(e) => handleDeleteDose(entry.id, index, false, e)}
                                   size="small"
+                                  sx={{ 
+                                    color: 'text.secondary',
+                                    '&:hover': { color: 'error.main' }
+                                  }}
                                 >
-                                  {dose.taken ? <CheckCircle /> : <Cancel />}
+                                  <DeleteIcon fontSize="small" />
                                 </IconButton>
-                              </Tooltip>
+                              </Box>
                             </Box>
                           </Box>
                         ))}
@@ -984,18 +1126,29 @@ const MedicationTracker: React.FC<MedicationTrackerProps> = ({ globalFilterTags 
                       {/* As-needed doses section */}
                       {entry.isAsNeeded && entry.asNeededDoses.length > 0 && (
                         <Box>
-                      <Typography variant="subtitle2" gutterBottom>
+                      <Typography 
+                        variant="subtitle2" 
+                        sx={{ 
+                          mb: 2,
+                          color: 'text.secondary',
+                          fontWeight: 500,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 1
+                        }}
+                      >
+                        <MedicationOutlined fontSize="small" />
                         Doses Taken
                       </Typography>
-                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
                         {entry.asNeededDoses.map((dose, index) => (
-                          <Box key={index} sx={{ width: { xs: 'calc(50% - 4px)', sm: 'calc(33.333% - 4px)' } }}>
+                          <Box key={index} sx={{ width: { xs: '100%', sm: 'calc(50% - 8px)', md: 'calc(33.333% - 8px)' } }}>
                             <Box 
                               sx={{ 
                                 display: 'flex', 
                                 alignItems: 'center',
                                 justifyContent: 'space-between', 
-                                p: 1,
+                                p: 1.5,
                                 border: '1px solid',
                                 borderColor: dose.taken ? 'success.main' : 'divider',
                                 borderRadius: 1,
@@ -1005,29 +1158,49 @@ const MedicationTracker: React.FC<MedicationTrackerProps> = ({ globalFilterTags 
                                 '&:hover': {
                                   backgroundColor: dose.taken ? 'success.100' : 'action.hover',
                                   borderColor: dose.taken ? 'success.dark' : 'primary.main',
+                                  transform: 'translateY(-1px)',
                                 }
                               }}
                               onClick={(e) => handleToggleAsNeededDose(entry, index, e)}
                             >
                               <Box>
-                                <Typography variant="body2">
+                                <Typography variant="subtitle2" sx={{ fontWeight: 500 }}>
                                   {formatTime(dose.scheduledTime)}
                                 </Typography>
                                 {dose.taken && dose.takenTime && (
-                                  <Typography variant="caption" color="text.secondary" display="block">
-                                    Taken: {formatTime(dose.takenTime)}
+                                  <Typography 
+                                    variant="caption" 
+                                    sx={{ 
+                                      color: 'success.dark',
+                                      display: 'block',
+                                      mt: 0.5,
+                                      fontWeight: 500
+                                    }}
+                                  >
+                                    ✓ Taken at {formatTime(dose.takenTime)}
                                   </Typography>
                                 )}
                               </Box>
-                              <Tooltip title={dose.taken ? "Remove this dose" : "Mark as taken"}>
-                                <IconButton 
-                                  onClick={(e) => handleToggleAsNeededDose(entry, index, e)}
-                                  color={dose.taken ? "success" : "default"}
+                              <Box sx={{ 
+                                display: 'flex', 
+                                alignItems: 'center',
+                                opacity: 0.7,
+                                transition: 'opacity 0.2s',
+                                '&:hover': {
+                                  opacity: 1
+                                }
+                              }}>
+                                <IconButton
+                                  onClick={(e) => handleDeleteDose(entry.id, index, true, e)}
                                   size="small"
+                                  sx={{ 
+                                    color: 'text.secondary',
+                                    '&:hover': { color: 'error.main' }
+                                  }}
                                 >
-                                  {dose.taken ? <CheckCircle /> : <Cancel />}
+                                  <DeleteIcon fontSize="small" />
                                 </IconButton>
-                              </Tooltip>
+                              </Box>
                             </Box>
                           </Box>
                         ))}

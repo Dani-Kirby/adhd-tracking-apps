@@ -1,6 +1,13 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { ViewConfig, ViewType } from '../types';
 import { useAuth } from './AuthContext';
+import { useTodoDataWithDeleteByView } from './DataContext';
+
+// Type-safe deep equality check
+function deepEqual<T>(a: T, b: T): boolean {
+  if (a === b) return true;
+  return JSON.stringify(a) === JSON.stringify(b);
+}
 
 // Generate a random ID for new views
 const generateId = (): string => {
@@ -36,84 +43,165 @@ interface ViewProviderProps {
 
 // Provider component
 export const ViewProvider: React.FC<ViewProviderProps> = ({ children }) => {
-  const [views, setViews] = useState<ViewConfig[]>([]);
   const { currentUser, isGuest } = useAuth();
+  const { deleteItemsByViewId } = useTodoDataWithDeleteByView();
   
-  // Create a user-specific storage key
-  const storageKey = useMemo(() => {
-    if (currentUser) {
-      return `user_${currentUser.uid}_views`;
-    } else if (isGuest) {
-      return 'guest_views';
-    } else {
-      return 'views'; // Fallback for not logged in or initializing
-    }
+  // Track which storage key was last loaded to prevent double-loading
+  const loadedStorageKeyRef = React.useRef<string | undefined>(undefined);
+  
+  // Initialize state and create storage key
+  const [views, setViews] = useState<ViewConfig[]>([]);
+  const storageKey = React.useMemo(() => {
+    const key = currentUser ? `user_${currentUser.uid}_views` 
+              : isGuest ? 'guest_views' 
+              : 'views';
+    console.log('[ViewContext] Using storage key:', key);
+    return key;
   }, [currentUser, isGuest]);
 
   // Load views from localStorage when component mounts or user changes
   useEffect(() => {
-    const storedViews = localStorage.getItem(storageKey);
-    if (storedViews) {
-      setViews(JSON.parse(storedViews));
-    } else {
-      // Initialize with default views if none exist
-      const defaultViews: ViewConfig[] = [
-        { id: generateId(), type: 'sleep', title: 'Sleep Tracker', visible: true, order: 0 },
-        { id: generateId(), type: 'screenTime', title: 'Screen Time', visible: true, order: 1 },
-        { id: generateId(), type: 'medication', title: 'Medication', visible: true, order: 2 },
-        { id: generateId(), type: 'todo', title: 'To-Do List', visible: true, order: 3 },
-        { id: generateId(), type: 'calendar', title: 'Calendar', visible: true, order: 4 },
-      ];
-      setViews(defaultViews);
-      localStorage.setItem(storageKey, JSON.stringify(defaultViews));
+    if (!storageKey) {
+      console.log('[ViewContext] No storage key available');
+      return;
     }
-  }, [storageKey]); // Re-run when user changes (storageKey changes)
+
+    if (loadedStorageKeyRef.current === storageKey) {
+      console.log('[ViewContext] Views already loaded for this key:', storageKey);
+      return;
+    }
+
+    console.log('[ViewContext] Loading views for key:', storageKey);
+    
+    try {
+      const storedViews = localStorage.getItem(storageKey);
+      
+      if (storedViews) {
+        const parsed = JSON.parse(storedViews);
+        console.log('[ViewContext] Found stored views:', parsed);
+        
+        if (Array.isArray(parsed)) {
+          setViews(prev => deepEqual(prev, parsed) ? prev : parsed);
+        } else {
+          console.error('[ViewContext] Stored views is not an array:', parsed);
+          setViews([]);
+        }
+      } else {
+        console.log('[ViewContext] No stored views found, checking for first load');
+        
+        // Only create defaults on first load (no previous storage key)
+        if (!loadedStorageKeyRef.current) {
+          console.log('[ViewContext] Creating default views');
+          const defaultViews: ViewConfig[] = [
+            { id: generateId(), type: 'sleep', title: 'Sleep Tracker', visible: true, order: 0 },
+            { id: generateId(), type: 'screenTime', title: 'Screen Time', visible: true, order: 1 },
+            { id: generateId(), type: 'medication', title: 'Medication', visible: true, order: 2 },
+            { id: generateId(), type: 'todo', title: 'To-Do List', visible: true, order: 3 },
+            { id: generateId(), type: 'calendar', title: 'Calendar', visible: true, order: 4 },
+          ];
+          setViews(defaultViews);
+          localStorage.setItem(storageKey, JSON.stringify(defaultViews));
+        } else {
+          // If we're switching users and no views found, start with empty array
+          console.log('[ViewContext] No views found for current user, starting fresh');
+          setViews([]);
+        }
+      }
+      
+      loadedStorageKeyRef.current = storageKey;
+    } catch (error) {
+      console.error('[ViewContext] Error loading views:', error);
+      setViews([]);
+      loadedStorageKeyRef.current = storageKey;
+    }
+  }, [storageKey]);
 
   // Debounced save to localStorage
   useEffect(() => {
+    if (!storageKey || !Array.isArray(views)) return;
+    
     const saveTimeout = setTimeout(() => {
-      localStorage.setItem(storageKey, JSON.stringify(views));
-    }, 300); // 300ms debounce
+      try {
+        localStorage.setItem(storageKey, JSON.stringify(views));
+        console.log('[ViewContext] Saved views to localStorage:', views.length);
+      } catch (error) {
+        console.error('[ViewContext] Failed to save views to localStorage:', error);
+      }
+    }, 300);
 
     return () => clearTimeout(saveTimeout);
   }, [views, storageKey]);
 
-  // Add a new view with useCallback
-  const addView = useCallback((type: ViewType, title: string) => {
-    const newView: ViewConfig = {
-      id: generateId(),
-      type,
-      title,
-      visible: true,
-      order: 0, // Will be calculated based on current views
-    };
+  // Memoized callbacks with improved error handling and logging
+  const addView = React.useCallback((type: ViewType, title: string) => {
+    console.log('[ViewContext] Adding new view:', { type, title });
     
-    // Update state immediately
-    setViews(prevViews => {
-      const newOrder = prevViews.length;
-      const updatedViews = [...prevViews, {...newView, order: newOrder}];
+    try {
+      const newView: ViewConfig = {
+        id: generateId(),
+        type,
+        title: title.trim(),
+        visible: true,
+        order: 0, // Will be calculated based on current views
+      };
       
-      // Force immediate localStorage save for new views
-      localStorage.setItem(storageKey, JSON.stringify(updatedViews));
-      
-      return updatedViews;
-    });
-  }, [storageKey]);
-
-  // Update an existing view with useCallback
-  const updateView = useCallback((updatedView: ViewConfig) => {
-    setViews(prevViews => 
-      prevViews.map(view => view.id === updatedView.id ? updatedView : view)
-    );
+      setViews(prevViews => {
+        // Handle empty or invalid prev state
+        const validPrevViews = Array.isArray(prevViews) ? prevViews : [];
+        const newOrder = validPrevViews.length;
+        return [...validPrevViews, { ...newView, order: newOrder }];
+      });
+    } catch (error) {
+      console.error('[ViewContext] Error adding view:', error);
+    }
   }, []);
 
-  // Delete a view with useCallback
-  const deleteView = useCallback((id: string) => {
-    setViews(prevViews => prevViews.filter(view => view.id !== id));
+  const updateView = React.useCallback((updatedView: ViewConfig) => {
+    console.log('[ViewContext] Updating view:', updatedView);
+    
+    try {
+      setViews(prevViews => {
+        if (!Array.isArray(prevViews)) return [];
+        return prevViews.map(view => view.id === updatedView.id ? updatedView : view);
+      });
+    } catch (error) {
+      console.error('[ViewContext] Error updating view:', error);
+    }
   }, []);
 
-  // Reorder views with useCallback
-  const reorderViews = useCallback((orderedIds: string[]) => {
+  const deleteView = React.useCallback((id: string) => {
+    if (!id) {
+      console.error('[ViewContext] Cannot delete view: Invalid ID');
+      return;
+    }
+
+    try {
+      // First clean up associated items
+      deleteItemsByViewId(id);
+      
+      // Then update views state
+      setViews(prevViews => {
+        if (!Array.isArray(prevViews)) return [];
+
+        const viewToDelete = prevViews.find(view => view.id === id);
+        if (!viewToDelete) return prevViews;
+
+        // Remove the view and update orders
+        return prevViews
+          .filter(view => view.id !== id)
+          .map((view, index) => ({
+            ...view,
+            order: index
+          }));
+      });
+
+      console.log('[ViewContext] View deletion completed:', id);
+    } catch (error) {
+      console.error('[ViewContext] Error deleting view:', error);
+    }
+  }, [deleteItemsByViewId]);
+
+  const reorderViews = React.useCallback((orderedIds: string[]) => {
     setViews(prevViews => {
       const reorderedViews = [...prevViews];
       orderedIds.forEach((id, index) => {
@@ -126,24 +214,29 @@ export const ViewProvider: React.FC<ViewProviderProps> = ({ children }) => {
     });
   }, []);
 
-  // Toggle view visibility with useCallback
-  const toggleViewVisibility = useCallback((id: string) => {
-    setViews(prevViews => 
-      prevViews.map(view => 
+  const toggleViewVisibility = React.useCallback((id: string) => {
+    setViews(prevViews =>
+      prevViews.map(view =>
         view.id === id ? { ...view, visible: !view.visible } : view
       )
     );
   }, []);
 
-  // Memoize the context value
-  const contextValue = useMemo(() => ({
-    views, 
-    addView, 
-    updateView, 
-    deleteView, 
+  // Create a stable context value that only changes when necessary
+  const contextValue = React.useMemo(() => ({
+    views,
+    addView,
+    updateView,
+    deleteView,
     reorderViews,
     toggleViewVisibility
-  }), [views, addView, updateView, deleteView, reorderViews, toggleViewVisibility]);
+  }), [
+    // Only include truly required dependencies
+    views,
+    // These callbacks are stable and don't need to be dependencies
+    // as they're wrapped in useCallback
+    addView, updateView, deleteView, reorderViews, toggleViewVisibility
+  ]);
 
   return (
     <ViewContext.Provider value={contextValue}>

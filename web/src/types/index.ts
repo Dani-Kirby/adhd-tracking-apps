@@ -8,6 +8,7 @@ export interface Tag {
 // Base interface for all trackable items
 export interface TrackableItem {
   id: string;
+  viewId: string; // ID of the dashboard view/card this item belongs to
   date: string; // ISO string format
   tags: Tag[];
   notes?: string;
@@ -15,8 +16,14 @@ export interface TrackableItem {
 
 // Sleep tracking
 export interface SleepEntry extends TrackableItem {
-  startTime: string; // ISO string format
-  endTime: string; // ISO string format
+  // Sleep can be logged either by start/end time or by duration
+  startTime?: string; // ISO string format
+  endTime?: string; // ISO string format
+  duration?: {
+    hours: number;
+    minutes: number;
+  };
+  entryType: 'time' | 'duration'; // Indicates which input method was used
   quality: number; // 1-5 scale
 }
 
@@ -25,6 +32,8 @@ export interface ScreenTimeEntry extends TrackableItem {
   duration: number; // in minutes
   device?: string;
   category?: string;
+  logDate: string; // ISO string format - specific date this entry is for
+  loggedAt: string; // ISO string format - when this entry was created
 }
 
 // Days of week for recurring items
