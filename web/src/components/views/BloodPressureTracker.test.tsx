@@ -14,12 +14,13 @@ jest.mock('../../contexts/DataContext', () => ({
   BloodPressureContext: {
     useData: () => ({
       items: [],
-      addItem: mockAddItem,
-      deleteItem: mockDeleteItem,
-      updateItem: mockUpdateItem,
-      getItemById: jest.fn(),
-      getItemsByTag: jest.fn(),
-      getItemsByDate: jest.fn()
+  addItem: mockAddItem,
+  deleteItem: mockDeleteItem,
+  updateItem: mockUpdateItem,
+  getItemById: jest.fn(),
+  getItemsByTag: jest.fn(),
+  getItemsByDate: jest.fn(),
+  deleteItemsByViewId: jest.fn()
     }),
     DataProvider: ({ children }: { children: React.ReactNode }) => children
   }
@@ -27,13 +28,14 @@ jest.mock('../../contexts/DataContext', () => ({
 
 const createTestReading = (overrides?: Partial<BloodPressureEntry>): BloodPressureEntry => ({
   id: '1',
+  viewId: overrides?.viewId ?? 'test-view-id',
   date: new Date().toISOString(),
   timeOfDay: new Date().toISOString(),
   systolic: 120,
   diastolic: 80,
   heartRate: 72,
   tags: [],
-  ...overrides
+  ...overrides,
 });
 
 describe('BloodPressureTracker', () => {
@@ -42,8 +44,7 @@ describe('BloodPressureTracker', () => {
   });
 
   it('renders all form fields', () => {
-    render(<BloodPressureTracker />);
-
+    render(<BloodPressureTracker viewId="test-view-id" />);
     expect(screen.getByLabelText(/systolic/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/diastolic/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/heart rate/i)).toBeInTheDocument();
@@ -51,7 +52,7 @@ describe('BloodPressureTracker', () => {
   });
 
   it('validates form inputs before submission', async () => {
-    render(<BloodPressureTracker />);
+  render(<BloodPressureTracker viewId="test-view-id" />);
 
     const submitButton = screen.getByRole('button', { name: /save/i });
     fireEvent.click(submitButton);
@@ -72,7 +73,7 @@ describe('BloodPressureTracker', () => {
   });
 
   it('successfully submits a new reading', async () => {
-    render(<BloodPressureTracker />);
+  render(<BloodPressureTracker viewId="test-view-id" />);
 
     await userEvent.type(screen.getByLabelText(/systolic/i), '120');
     await userEvent.type(screen.getByLabelText(/diastolic/i), '80');
@@ -96,16 +97,17 @@ describe('BloodPressureTracker', () => {
     
     // Mock items for this test
     jest.spyOn(BloodPressureContext, 'useData').mockImplementation(() => ({
-      items: [testReading],
-      addItem: mockAddItem,
-      deleteItem: mockDeleteItem,
-      updateItem: mockUpdateItem,
-      getItemById: jest.fn(),
-      getItemsByTag: jest.fn(),
-      getItemsByDate: jest.fn()
+  items: [testReading],
+  addItem: mockAddItem,
+  deleteItem: mockDeleteItem,
+  updateItem: mockUpdateItem,
+  getItemById: jest.fn(),
+  getItemsByTag: jest.fn(),
+  getItemsByDate: jest.fn(),
+  deleteItemsByViewId: jest.fn()
     }));
 
-    render(<BloodPressureTracker />);
+  render(<BloodPressureTracker viewId="test-view-id" />);
 
     const deleteButton = screen.getByRole('button', { name: /delete/i });
     fireEvent.click(deleteButton);
@@ -123,44 +125,39 @@ describe('BloodPressureTracker', () => {
   it('filters readings by time of day', async () => {
     const morningReading = createTestReading({
       id: '1',
-      timeOfDay: '2024-01-01T08:00:00'
+      timeOfDay: '2024-01-01T08:00:00',
     });
-
     const eveningReading = createTestReading({
       id: '2',
       timeOfDay: '2024-01-01T20:00:00',
       systolic: 118,
       diastolic: 78,
-      heartRate: 70
+      heartRate: 70,
     });
-
     // Mock items for this test
     jest.spyOn(BloodPressureContext, 'useData').mockImplementation(() => ({
-      items: [morningReading, eveningReading],
-      addItem: mockAddItem,
-      deleteItem: mockDeleteItem,
-      updateItem: mockUpdateItem,
-      getItemById: jest.fn(),
-      getItemsByTag: jest.fn(),
-      getItemsByDate: jest.fn()
+  items: [morningReading, eveningReading],
+  addItem: mockAddItem,
+  deleteItem: mockDeleteItem,
+  updateItem: mockUpdateItem,
+  getItemById: jest.fn(),
+  getItemsByTag: jest.fn(),
+  getItemsByDate: jest.fn(),
+  deleteItemsByViewId: jest.fn(),
     }));
-
-    render(<BloodPressureTracker />);
-
+    render(<BloodPressureTracker viewId="test-view-id" />);
     const filterSelect = screen.getByLabelText(/filter by time/i);
     fireEvent.change(filterSelect, { target: { value: 'morning' } });
-
     await waitFor(() => {
       expect(screen.getByText('120/80')).toBeInTheDocument();
     });
-
     await waitFor(() => {
       expect(screen.queryByText('118/78')).not.toBeInTheDocument();
     });
   });
 
   it('validates heart rate input', async () => {
-    render(<BloodPressureTracker />);
+  render(<BloodPressureTracker viewId="test-view-id" />);
 
     const heartRateInput = screen.getByLabelText(/heart rate/i);
     await userEvent.type(heartRateInput, '200');
@@ -180,21 +177,19 @@ describe('BloodPressureTracker', () => {
 
     // Mock items for this test
     jest.spyOn(BloodPressureContext, 'useData').mockImplementation(() => ({
-      items: [testReading],
-      addItem: mockAddItem,
-      deleteItem: mockDeleteItem,
-      updateItem: mockUpdateItem,
-      getItemById: jest.fn(),
-      getItemsByTag: jest.fn(),
-      getItemsByDate: jest.fn()
+  items: [testReading],
+  addItem: mockAddItem,
+  deleteItem: mockDeleteItem,
+  updateItem: mockUpdateItem,
+  getItemById: jest.fn(),
+  getItemsByTag: jest.fn(),
+  getItemsByDate: jest.fn(),
+  deleteItemsByViewId: jest.fn()
     }));
 
-    const { rerender } = render(<BloodPressureTracker />);
-
-    expect(screen.getByText('72 BPM')).toBeInTheDocument();
-
-    rerender(<BloodPressureTracker />);
-
-    expect(screen.getByText('72 BPM')).toBeInTheDocument();
+  const { rerender } = render(<BloodPressureTracker viewId="test-view-id" />);
+  expect(screen.getByText('72 BPM')).toBeInTheDocument();
+  rerender(<BloodPressureTracker viewId="test-view-id" />);
+  expect(screen.getByText('72 BPM')).toBeInTheDocument();
   });
 });

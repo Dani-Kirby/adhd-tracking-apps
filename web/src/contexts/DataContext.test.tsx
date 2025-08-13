@@ -74,8 +74,8 @@ describe('DataContext', () => {
 
   it('initializes with items from localStorage if available', () => {
     const testItems = [
-      { id: '1', date: '2023-01-01T00:00:00.000Z', tags: [], value: 'test 1' },
-      { id: '2', date: '2023-01-02T00:00:00.000Z', tags: [], value: 'test 2' },
+      { id: '1', date: '2023-01-01T00:00:00.000Z', tags: [], value: 'test 1', viewId: 'test-view-id' },
+      { id: '2', date: '2023-01-02T00:00:00.000Z', tags: [], value: 'test 2', viewId: 'test-view-id' },
     ];
     
     // Set initial localStorage data
@@ -125,6 +125,7 @@ describe('DataContext', () => {
           date: '2023-01-01T00:00:00.000Z',
           tags: [],
           value: 'new test item',
+          viewId: 'test-view-id',
         });
       }, [addItem]);
       
@@ -164,6 +165,7 @@ describe('DataContext', () => {
       date: '2023-01-01T00:00:00.000Z',
       tags: [],
       value: 'initial value',
+      viewId: 'test-view-id',
     };
     
     // Set initial localStorage data
@@ -211,8 +213,8 @@ describe('DataContext', () => {
 
   it('deletes an item with deleteItem function', async () => {
     const testItems = [
-      { id: 'item1', date: '2023-01-01T00:00:00.000Z', tags: [], value: 'value 1' },
-      { id: 'item2', date: '2023-01-02T00:00:00.000Z', tags: [], value: 'value 2' },
+      { id: 'item1', viewId: 'test-view-id', date: '2023-01-01T00:00:00.000Z', tags: [], value: 'value 1' },
+      { id: 'item2', viewId: 'test-view-id', date: '2023-01-02T00:00:00.000Z', tags: [], value: 'value 2' },
     ];
     
     // Set initial localStorage data
@@ -275,6 +277,7 @@ describe('DataContext', () => {
       // Add an item when component mounts
       useEffect(() => {
         addItem({
+          viewId: 'test-view-id',
           date: '2023-01-01T00:00:00.000Z',
           tags: [],
           value: 'user specific item',
